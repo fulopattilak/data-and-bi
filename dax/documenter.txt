@@ -219,13 +219,13 @@ Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
 
 [Output Variable]			[Description]
 
-_tables						Describes the tables loaded from Power Query and all calculated tables.
-_columns					Describes columns and calculated columns.
+_tables					Describes the tables loaded from Power Query and all calculated tables.
+_columns				Describes columns and calculated columns.
 _relationships				Describes the relationships between tables.
 _otherQueries				Describes the queries that are used in Power Query, but not loaded to the model.
-_measures					Describes all measures.
+_measures				Describes all measures.
 _incrementalTables			Describes the incremental refresh policy of the tables (if any).
-_rlsRoles					Lists the RLS roles that are set (if any).
+_rlsRoles				Lists the RLS roles that are set (if any).
 _rlsFilters					Describes the filtering criteria for RLS roles.
 _dependencies				Describes table column and measure dependencies.
 */
