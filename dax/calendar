@@ -1,0 +1,125 @@
+Calendar = 
+VAR _startDate =
+    DATE(2025,1,1)
+VAR _endDate =
+    DATE(2025,12,31)
+VAR _locale = "en"
+VAR _l1 = 
+    ADDCOLUMNS(
+        --CALENDARAUTO(12),
+        CALENDAR(_startDate, _endDate),
+        "Year", YEAR([Date]),
+        "Month number", MONTH([Date]),
+        "Day", DAY([Date]),
+        "Month", FORMAT([Date], "mmmm", _locale),
+        "Month short", FORMAT([Date], "mmm", _locale),
+        "Quarter number", QUARTER([Date]),
+        "Week number", WEEKNUM([Date], 2),
+        "ISO week number", WEEKNUM([Date], 21),
+        "Weekday number", WEEKDAY([Date], 2),
+        "Weekday", FORMAT([Date], "dddd", _locale),
+        "Weekday short", FORMAT([Date], "ddd", _locale),
+        "Year offset", DATEDIFF(TODAY(), [Date], YEAR),
+        "Quarter offset", DATEDIFF(TODAY(), [Date], QUARTER),
+        "Month offset", DATEDIFF(TODAY(), [Date], MONTH),
+        "Week offset", DATEDIFF(TODAY(), [Date], WEEK),
+        "Day offset", DATEDIFF(TODAY(), [Date], DAY)
+    )
+VAR _l2 =
+    ADDCOLUMNS(_l1,
+        "Quarter", "Q" & [Quarter number],
+        "Year start", DATE([Year],1,1),
+        "Year end", DATE([Year], 12, 31),
+        "Month start", DATE([Year], [Month number], 1),
+        "Month end", DATE([Year], [Month number] + 1, 1) - 1,
+        "Week start", [Date] - [Weekday number] +1,
+        "Week", "W" & [Week number],
+        "ISO week","W" & [ISO week number],
+        "Weekday or weekend", IF([Weekday number] > 5, "Weekend", "Weekday"),
+        "ISO year", 
+            IF([ISO week number]<5 && [Week number] > 50,
+                [Year]+1,
+                IF([ISO week number] >50 && [Week number]<5,
+                    [Year]-1,
+                    [Year]
+                )
+            ),
+        "Year text", CONVERT([Year], STRING)
+    )
+VAR _l3 =
+    ADDCOLUMNS(_l2,
+        "Dynamic year",
+            SWITCH(TRUE(),
+                [Year offset] = 0, "This year",
+                [Year offset] = -1, "Last year",
+                [Year offset] =  1, "Next year",
+                [Year text]
+            ),
+        "Dynamic quarter",
+            SWITCH(TRUE(),
+                [Quarter offset] = 0, "This quarter",
+                [Quarter offset] = -1, "Last quarter",
+                [Quarter offset] =  1, "Next quarter",
+                [Year text] & " " & [Quarter]
+            ),
+        "Dynamic month",
+            SWITCH(TRUE(),
+                [Month offset] = 0, "This month",
+                [Month offset] = -1, "Last month",
+                [Month offset] =  1, "Next month",
+                [Year text] & " " & [Month short]
+            ),
+        "Dynamic week",
+            SWITCH(TRUE(),
+                [Week offset] = 0, "This week",
+                [Week offset] = -1, "Last week",
+                [Week offset] =  1, "Next week",
+                [Year text] & " " & [Week]
+            ),
+        "Dynamic day",
+            SWITCH(TRUE(),
+                [Day offset] = 0, "Today",
+                [Day offset] = -1, "Yesterday",
+                [Day offset] =  1, "Tomorrow",
+                [Day]& ". " & [Month short] & " " & [Year]
+            ),
+        "Week end", [Week start] + 6
+    )
+VAR _fin =
+    SELECTCOLUMNS(_l3,
+        [Date],
+        [Year],
+        [Month number],
+        [Day],
+        [Month],
+        [Month short],
+        [Quarter number],
+        [Week number],
+        [ISO week number],
+        [Weekday number],
+        [Weekday],
+        [Weekday short],
+        [Year offset],
+        [Quarter offset],
+        [Month offset],
+        [Week offset],
+        [Day offset],
+        [Quarter],
+        [Year start],
+        [Year end],
+        [Month start],
+        [Month end],
+        [Week start],
+        [Week end],
+        [Week],
+        [ISO week],
+        [Weekday or weekend],
+        [ISO year],
+        [Dynamic year],
+        [Dynamic quarter],
+        [Dynamic month],
+        [Dynamic week],
+        [Dynamic day]
+    )
+RETURN
+    _fin
