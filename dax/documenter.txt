@@ -226,6 +226,6 @@ _otherQueries				Describes the queries that are used in Power Query, but not loa
 _measures				Describes all measures.
 _incrementalTables			Describes the incremental refresh policy of the tables (if any).
 _rlsRoles				Lists the RLS roles that are set (if any).
-_rlsFilters					Describes the filtering criteria for RLS roles.
+_rlsFilters				Describes the filtering criteria for RLS roles.
 _dependencies				Describes table column and measure dependencies.
 */
