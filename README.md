@@ -1,4 +1,4 @@
-# Microsoft Power BI Repository
+# BI Repository
 
 ## About
 This repository is a collection of ideas and projects related to Business Intelligence. It serves as:
