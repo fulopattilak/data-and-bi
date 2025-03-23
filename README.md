@@ -1,4 +1,4 @@
-# BI Repository
+# Business Intelligence Repository
 
 ## About
 This repository is a collection of ideas and projects related to Business Intelligence. It serves as:
