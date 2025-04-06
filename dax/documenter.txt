@@ -1,207 +1,208 @@
+/*
+This query is intended to be run in 'DAX Studio.
+It is designed to speed up report documentation.
+Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
+*/
+
 DEFINE
+
+VAR _info = 
+	{
+		("POWER BI","Created at: ",FORMAT(UTCNOW(), "d. mmm yyyy, h:nn") & " UTC",),
+		("DOCUMENTATION",,,),
+		(,,,),
+		(,"Sheet", "Table Name", "Description"),
+		(,,,),
+		(,"Query 2", "Tables", "Describes the tables loaded from Power Query and all calculated tables."),
+		(,"Query 3", "Columns", "Describes columns and calculated columns."),
+		(,"Query 4", "Measures", "Describes all measures."),
+		(,"Query 5", "Relationships","Describes the relationships between tables."),
+		(,"Query 6", "Other Queries","Describes the queries that are used in Power Query, but not loaded to the model."),
+		(,"Query 7", "Incremental Tables", "Describes the incremental refresh policy of the tables (if any)."),
+		(,"Query 8", "RLS Roles", "Lists the RLS roles that are set (if any)."),
+		(,"Query 9", "RLS Filters", "Describes the filtering criteria for RLS roles."),
+		(,"Query 10", "Dependencies", "Describes table column and measure dependencies.")
+}
 
 -- DIM tables
 
-	VAR _partitions =
-		SELECTCOLUMNS(
-			INFO.PARTITIONS(),
-			"Table ID", [TableID],
-			"Expression", [QueryDefinition]
-		)
-	VAR _dataTypes =
-		SELECTCOLUMNS(
-			{
-				( "Automatic", 1, "Internal only."),
-				( "Binary", 17, "Column or measure contains binary data."),
-				( "Boolean", 11, "Column or measure contains boolean data values."),
-				( "DateTime", 9, "Column or measure contains date and time data"),
-				( "Decimal", 10, "Column or measure contains decimal data values."),
-				( "Double", 8, "Column or measure contains double-precision floating-point numbers."),
-				( "Int64", 6, "Column or measure contains integers."),
-				( "String", 2, "Column or measure contains string data values."),
-				( "Unknown", 19, "Initial value of a newly created column, replaced with an actual value after saving a Column to the Server."),
-				( "Variant", 20, "A measure with varying data type.")
-			},
-			"Data Type ID", [Value2],
-			"Data Type", [Value1],
-			"Data Type Description", [Value3]
-		)
-	VAR _refreshGranularity =
-		SELECTCOLUMNS(
-			{
-				("Invalid", -1, "Invalid granularity."),
-				("Day", 0, "Day granularity."),
-				("Month", 1, "Month granularity."),
-				("Quarter", 2, "Quarter granularity."),
-				("Year", 3, "Year granularity.")
-			},
-			"Granularity", [Value1],
-			"Granularity ID", [Value2],
-			"Description", [Value3]
-		)
-	VAR _refreshMode =
-		SELECTCOLUMNS(
-			{
-				("Import", 0, "Creates import partitions during incremental refresh."),
-				("Hybrid", 1, "Creates import and DirectQuery partitions during incremental refresh.")
-			},
-			"Refresh Mode", [Value1],
-			"Refresh Mode ID", [Value2],
-			"Refresh Mode Description", [Value3]
-		)
+VAR _refreshGranularity =
+	SELECTCOLUMNS(
+		{
+			("Invalid", -1, "Invalid granularity."),
+			("Day", 0, "Day granularity."),
+			("Month", 1, "Month granularity."),
+			("Quarter", 2, "Quarter granularity."),
+			("Year", 3, "Year granularity.")
+		},
+		"Granularity", [Value1],
+		"Granularity ID", [Value2],
+		"Description", [Value3]
+	)
+VAR _refreshMode =
+	SELECTCOLUMNS(
+		{
+			("Import", 0, "Creates import partitions during incremental refresh."),
+			("Hybrid", 1, "Creates import and DirectQuery partitions during incremental refresh.")
+		},
+		"Refresh Mode", [Value1],
+		"Refresh Mode ID", [Value2],
+		"Refresh Mode Description", [Value3]
+	)
 
 -- STAGING tables
 
-	VAR _rlsTbl =
-	SELECTCOLUMNS(
-		INFO.ROLES(),
-		"RLS Role ID", [ID],
-		"Role", [Name],
-		"Description", [Description]
+VAR _rlsTbl =
+SELECTCOLUMNS(
+	INFO.ROLES(),
+	"RLS Role ID", [ID],
+	"Role", [Name],
+	"Description", [Description]
+)
+VAR _rlsFiltersTbl =
+ 	SELECTCOLUMNS(
+		INFO.TABLEPERMISSIONS(),
+		"Role ID", [RoleID],
+		"RLS Table ID", [TableID],
+		"Filter Expression", [FilterExpression]
 	)
-	VAR _rlsFiltersTbl =
-	 	SELECTCOLUMNS(
-			INFO.TABLEPERMISSIONS(),
-			"Role ID", [RoleID],
-			"RLS Table ID", [TableID],
-			"Filter Expression", [FilterExpression]
-		)
-	VAR _measuresTbl =
-		SELECTCOLUMNS(
-			INFO.MEASURES(),
-			"Table ID", [TableID],
-			"Measure", [Name],
-			"Expression", [Expression],
-			"Format String", [FormatString],
-			"Display Folder", [DisplayFolder],
-			"Data Type ID", [DataType],
-			"Measure Description", [Description]
-		)
-	VAR _tablesTbl =
-		SELECTCOLUMNS(
-			INFO.TABLES(),
-				"Table ID", [ID],
-				"Table", [Name],
-				"Table Description", [Description]
-		)
-	VAR _columnsTbl =
-		SELECTCOLUMNS(
-			INFO.COLUMNS(),
-			"Table ID", [TableID],
-			"Column ID", [ID],
-			"Column", COALESCE([ExplicitName], [InferredName]),
-			"Data Type ID", [ExplicitDataType],
-			"Expression", [EXPRESSION],
-			"Format String", [FormatString],
-			"Column Description", [Description]
-		)
-	
-	--OUTPUT tables
-	
-	VAR _columns =
-		SELECTCOLUMNS(
-			NATURALINNERJOIN(
-				NATURALINNERJOIN(_columnsTbl, _tablesTbl),
-				_dataTypes
-			),
-			"Columns", BLANK(),
-			[Table],
-			[Column],
-			"Description", [Column Description],
-			[Data Type],
-			[Expression],
-			[Format String]
-		)
-	VAR _tables =
+VAR _tablesTbl =
 	SELECTCOLUMNS(
-		NATURALINNERJOIN(_tablesTbl, _partitions),
-		"Tables", BLANK(),
-		[Table],
-		"Description", [Table Description],
-		[Expression]
+		INFO.TABLES(),
+			"Table ID", [ID],
+			"Table", [Name]
 	)
-	VAR _measures =
-	SELECTCOLUMNS(
+	
+--OUTPUT tables
+	
+VAR _columns =
+	NATURALINNERJOIN(
 		NATURALINNERJOIN(
-			NATURALLEFTOUTERJOIN(_measuresTbl, _tablesTbl),
-			_dataTypes
+			SELECTCOLUMNS(
+				INFO.VIEW.COLUMNS(),
+				"Columns", BLANK(),
+				[Table],
+				"Column", [Name],
+				[Description],
+				[Expression],
+				"Format String", [FormatString]
+			),
+			SELECTCOLUMNS(
+				COLUMNSTATISTICS(),
+				"Table", [Table Name],
+				"Column", [Column Name],
+				"Lowest Value", [Min],
+				"Highest Value", [Max],
+				[Cardinality],
+				[Max Length]
+			)
 		),
-		"Measures", BLANK(),
-		[Measure],
-		"Description", [Measure Description],
-		[Data Type],
-		[Expression], 
-		[Format String], 
-		[Table], 
-		[Display Folder]
+		SELECTCOLUMNS(
+			INFO.VIEW.COLUMNS(),
+			[Table],
+			"Column", [Name],
+			"Data Type", [DataType],
+			"Is Hidden", [IsHidden],
+			"Is Unique", [IsUnique],
+			"Sorted By", [SortByColumn],
+			"Category", [DataCategory]
+		)
 	)
-	VAR _relationships =
-		SELECTCOLUMNS(
-			INFO.RELATIONSHIPS(),
-			"Relationships", BLANK(),
-			"Is Active", [IsActive],
-			"From Table", MINX(FILTER(_tablesTbl, [Table ID] = [FromTableID]), [Table]),
-			"From Column", MINX(FILTER(_columnsTbl, [Column ID] = [FromColumnID]), [Column]),
-			"To Table", MINX(FILTER(_tablesTbl, [Table ID] = [ToTableID]), [Table]),
-			"To Column", MINX(FILTER(_columnsTbl, [Column ID] = [ToColumnID]), [Column]),
-			"Cardinality", IF([FromCardinality] = 1, "One", "Many") & " to " & IF([ToCardinality] = 1, "One", "Many"),
-			"Direction", IF([CrossFilteringBehavior] = 1, "Single", "Both")
-		)
-	VAR _incrementalTables =
-		SELECTCOLUMNS(
-			INFO.REFRESHPOLICIES(),
-			"Incremental Tables", BLANK(),
-			"Table", MINX(FILTER(_tablesTbl, [Table ID] = [TableID]), [Table]),
-			"Rolling Window", [RollingWindowPeriods] & " " & MINX(FILTER(_refreshGranularity, [RollingWindowGranularity] = [Granularity ID]), [Granularity]),
-			"Incremental Window", [IncrementalPeriods] & " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]),
-			"Incremental Offset", [IncrementalPeriodsOffset] & " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]),
-			"Refresh Mode", MINX(FILTER(_refreshMode, [Refresh Mode ID] = [PolicyType]), [Refresh Mode])
-		)
-	VAR _rlsRoles =
-		SELECTCOLUMNS(_rlsTbl,
-			"RLS Roles", BLANK(),
-			[Role],
-			[Description]
-		)
-	VAR _rlsFilters =
-		SELECTCOLUMNS(
-			_rlsFiltersTbl,
-			"RLS Filters", BLANK(),
-			"Role", MINX(FILTER(_rlsTbl, [Role ID] = [RLS Role ID]), [Role]),
-			"Table", MINX(FILTER(_tablesTbl, [Table ID] = [RLS Table ID]), [Table]),
-			[Filter Expression]
-		)
-	VAR _otherQueries =
-		SELECTCOLUMNS(
-			INFO.EXPRESSIONS(),
-			"Other Queries", BLANK(),
-			"Query Name", [Name],
-			"Description", [Description],
-			"Expression", [Expression]
-		)
-	VAR _dependencies =
-		SELECTCOLUMNS(INFO.CALCDEPENDENCY(),
-			"Dependencies", BLANK(),
-			"Item", [OBJECT],
-			"Table", [TABLE],
-			"Type", [OBJECT_TYPE],
-			"Expression", [EXPRESSION],
-			"Referenced Item", [REFERENCED_OBJECT],
-			"Referenced Table", [REFERENCED_TABLE],
-			"Referenced Type", [REFERENCED_OBJECT_TYPE],
-			"Referenced Expression", [REFERENCED_EXPRESSION]
-		)
+VAR _tables =
+	SELECTCOLUMNS(
+		INFO.VIEW.TABLES(),
+		"Tables", BLANK(),
+		"Table", [Name],
+		[Description],
+		[Expression],
+		"Is Hidden", [IsHidden],
+		"Storage Mode", [StorageMode]
+	)
+VAR _measures =
+	SELECTCOLUMNS(
+		INFO.VIEW.MEASURES(),
+		"Measures", BLANK(),
+		"Measure", [Name],
+		[Description],
+		"Data Type", [DataType],
+		[Expression], 
+		"Format String", [FormatStringDefinition], 
+		[Table], 
+		"Display Folder", [DisplayFolder],
+		"Is Hidden", [IsHidden],
+		[State]
+	)
+VAR _relationships =
+	SELECTCOLUMNS(
+		INFO.VIEW.RELATIONSHIPS(),
+		"Relationships", BLANK(),
+		[Relationship],
+		[Name],
+		"Is Active", [IsActive],
+		"Direction", [CrossFilteringBehavior],
+		"From Table", [FromTable],
+		"From Column", [FromColumn],
+		"To Table", [ToTable],
+		"To Column", [ToColumn],
+		"Cardinality", [FromCardinality] & " to " & [ToCardinality]
+	)
+VAR _incrementalTables =
+	SELECTCOLUMNS(
+		INFO.REFRESHPOLICIES(),
+		"Incremental Tables", BLANK(),
+		"Table", MINX(FILTER(_tablesTbl, [Table ID] = [TableID]), [Table]),
+		"Rolling Window", [RollingWindowPeriods] & " " & MINX(FILTER(_refreshGranularity, [RollingWindowGranularity] = [Granularity ID]), [Granularity]),
+		"Incremental Window", [IncrementalPeriods] & " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]),
+		"Incremental Offset", [IncrementalPeriodsOffset] & " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]),
+		"Refresh Mode", MINX(FILTER(_refreshMode, [Refresh Mode ID] = [PolicyType]), [Refresh Mode])
+	)
+VAR _rlsRoles =
+	SELECTCOLUMNS(_rlsTbl,
+		"RLS Roles", BLANK(),
+		[Role],
+		[Description]
+	)
+VAR _rlsFilters =
+	SELECTCOLUMNS(
+		_rlsFiltersTbl,
+		"RLS Filters", BLANK(),
+		"Role", MINX(FILTER(_rlsTbl, [Role ID] = [RLS Role ID]), [Role]),
+		"Table", MINX(FILTER(_tablesTbl, [Table ID] = [RLS Table ID]), [Table]),
+		[Filter Expression]
+	)
+VAR _otherQueries =
+	SELECTCOLUMNS(
+		INFO.EXPRESSIONS(),
+		"Other Queries", BLANK(),
+		"Query Name", [Name],
+		"Description", [Description],
+		"Expression", [Expression]
+	)
+VAR _dependencies =
+	SELECTCOLUMNS(INFO.CALCDEPENDENCY(),
+		"Dependencies", BLANK(),
+		"Item", [OBJECT],
+		"Table", [TABLE],
+		"Type", [OBJECT_TYPE],
+		"Expression", [EXPRESSION],
+		"Referenced Item", [REFERENCED_OBJECT],
+		"Referenced Table", [REFERENCED_TABLE],
+		"Referenced Type", [REFERENCED_OBJECT_TYPE],
+		"Referenced Expression", [REFERENCED_EXPRESSION]
+	)
 
+EVALUATE
+	_info
 EVALUATE
 	_tables
 EVALUATE
 	_columns
 EVALUATE
+	_measures
+EVALUATE
 	_relationships
 EVALUATE
 	_otherQueries
-EVALUATE
-	_measures
 EVALUATE
 	_incrementalTables
 EVALUATE
@@ -215,17 +216,4 @@ EVALUATE
 This query is intended to be run in 'DAX Studio.
 It is designed to speed up report documentation.
 Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
-
-
-[Output Variable]			[Description]
-
-_tables					Describes the tables loaded from Power Query and all calculated tables.
-_columns				Describes columns and calculated columns.
-_relationships				Describes the relationships between tables.
-_otherQueries				Describes the queries that are used in Power Query, but not loaded to the model.
-_measures				Describes all measures.
-_incrementalTables			Describes the incremental refresh policy of the tables (if any).
-_rlsRoles				Lists the RLS roles that are set (if any).
-_rlsFilters				Describes the filtering criteria for RLS roles.
-_dependencies				Describes table column and measure dependencies.
 */
