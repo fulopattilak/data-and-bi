@@ -8,7 +8,7 @@ DEFINE
 
 VAR _info = 
 	{
-		("POWER BI","Created at: ",FORMAT(UTCNOW(), "d. mmm yyyy, h:nn") & " UTC",),
+		("POWER BI",,"Created at: ",FORMAT(UTCNOW(), "d. mmm yyyy, h:nn") & " UTC"),
 		("DOCUMENTATION",,,),
 		(,,,),
 		(,"Sheet", "Table Name", "Description"),
