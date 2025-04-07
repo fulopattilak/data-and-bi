@@ -30,10 +30,10 @@ VAR _refreshGranularity =
 	SELECTCOLUMNS(
 		{
 			("Invalid", -1, "Invalid granularity."),
-			("Day", 0, "Day granularity."),
-			("Month", 1, "Month granularity."),
-			("Quarter", 2, "Quarter granularity."),
-			("Year", 3, "Year granularity.")
+			("Day(s)", 0, "Day granularity."),
+			("Month(s)", 1, "Month granularity."),
+			("Quarter(s)", 2, "Quarter granularity."),
+			("Year(s)", 3, "Year granularity.")
 		},
 		"Granularity", [Value1],
 		"Granularity ID", [Value2],
@@ -157,9 +157,9 @@ VAR _incrementalTables =
 		INFO.REFRESHPOLICIES(),
 		"Incremental Tables", BLANK(),
 		"Table", MINX(FILTER(_tablesTbl, [Table ID] = [TableID]), [Table]),
-		"Rolling Window", [RollingWindowPeriods] & " " & MINX(FILTER(_refreshGranularity, [RollingWindowGranularity] = [Granularity ID]), [Granularity]),
-		"Incremental Window", [IncrementalPeriods] & " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]),
-		"Incremental Offset", [IncrementalPeriodsOffset] & " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]),
+		"Rolling Window History", [RollingWindowPeriods] & " " & MINX(FILTER(_refreshGranularity, [RollingWindowGranularity] = [Granularity ID]), [Granularity]),
+		"Incremental Window Start", "Refresh Date - " & [IncrementalPeriods] & " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]),
+		"Incremental Window End",  "Refresh Date - " & [IncrementalPeriodsOffset] & " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]),
 		"Refresh Mode", MINX(FILTER(_refreshMode, [Refresh Mode ID] = [PolicyType]), [Refresh Mode])
 	)
 VAR _rlsRoles =
