@@ -9,7 +9,7 @@ DEFINE
 VAR _info = 
 	{
 		("POWER BI",,"Created at: ",FORMAT(UTCNOW(), "d. mmm yyyy, h:nn") & " UTC"),
-		("DOCUMENTATION",,,),
+		("DOCUMENTATION",,"Script: ","https://github.com/fulopattilak/data-and-bi/wiki/Report-documentation-with-DAX-Studio"),
 		(,,,),
 		(,"Sheet", "Table Name", "Description"),
 		(,,,),
