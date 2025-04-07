@@ -119,10 +119,9 @@ VAR _tables =
 			"Is Hidden", [IsHidden],
 			"Storage Mode", [StorageMode]
 		),
-		SELECTCOLUMNS(
-			GROUPBY(INFO.STORAGETABLES(), [DIMENSION_NAME], "Rows", MAXX(CURRENTGROUP(), [ROWS_COUNT])),
-			"Table", [DIMENSION_NAME],
-			[Rows]
+		SELECTCOLUMNS(FILTER(_columns, [Category] = "RowNumber"),
+			[Table],
+			"Rows", [Cardinality]
 		)
 	)
 VAR _measures =
