@@ -109,14 +109,21 @@ VAR _columns =
 		)
 	)
 VAR _tables =
-	SELECTCOLUMNS(
-		INFO.VIEW.TABLES(),
-		"Tables", BLANK(),
-		"Table", [Name],
-		[Description],
-		[Expression],
-		"Is Hidden", [IsHidden],
-		"Storage Mode", [StorageMode]
+	NATURALINNERJOIN(
+		SELECTCOLUMNS(
+			INFO.VIEW.TABLES(),
+			"Tables", BLANK(),
+			"Table", [Name],
+			[Description],
+			[Expression],
+			"Is Hidden", [IsHidden],
+			"Storage Mode", [StorageMode]
+		),
+		SELECTCOLUMNS(
+			GROUPBY(INFO.STORAGETABLES(), [DIMENSION_NAME], "Rows", MAXX(CURRENTGROUP(), [ROWS_COUNT])),
+			"Table", [DIMENSION_NAME],
+			[Rows]
+		)
 	)
 VAR _measures =
 	SELECTCOLUMNS(
