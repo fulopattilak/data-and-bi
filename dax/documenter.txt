@@ -93,10 +93,10 @@ VAR _dependencies =
 		"Dependencies", BLANK(),
 		"Object", [OBJECT],
 		"Table", [TABLE],
-		"Type", LOWER([OBJECT_TYPE]),
+		"Type", [OBJECT_TYPE],
 		"Referenced Object", [REFERENCED_OBJECT],
 		"Referenced Table", [REFERENCED_TABLE],
-		"Referenced Type", LOWER([REFERENCED_OBJECT_TYPE])
+		"Referenced Type", [REFERENCED_OBJECT_TYPE]
 	)
 VAR _columns =
 	NATURALLEFTOUTERJOIN(
