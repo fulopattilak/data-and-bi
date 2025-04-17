@@ -80,7 +80,7 @@ VAR _tablesTbl =
 			"Table ID", [ID],
 			"Table", [Name]
 	)
-	
+
 --OUTPUT tables
 
 VAR _dependencies =
@@ -96,35 +96,28 @@ VAR _dependencies =
 VAR _columns =
 	NATURALLEFTOUTERJOIN(
 		NATURALINNERJOIN(
-			NATURALINNERJOIN(
-				SELECTCOLUMNS(
-					INFO.VIEW.COLUMNS(),
-					"Columns", BLANK(),
-					[Table],
-					"Column", [Name],
-					[Description],
-					[Expression],
-					"Format String", [FormatString]
-				),
-				SELECTCOLUMNS(
-					COLUMNSTATISTICS(),
-					"Table", [Table Name],
-					"Column", [Column Name],
-					"Lowest Value", [Min],
-					"Highest Value", [Max],
-					[Cardinality],
-					[Max Length]
-				)
-			),
 			SELECTCOLUMNS(
 				INFO.VIEW.COLUMNS(),
+				"Columns", BLANK(),
 				[Table],
 				"Column", [Name],
+				[Description],
+				[Expression],
+				"Format String", [FormatString],
 				"Data Type", [DataType],
 				"Is Hidden", [IsHidden],
 				"Is Unique", [IsUnique],
 				"Sorted By", [SortByColumn],
 				"Category", [DataCategory]
+			),
+			SELECTCOLUMNS(
+				COLUMNSTATISTICS(),
+				"Table", [Table Name],
+				"Column", [Column Name],
+				"Lowest Value", [Min],
+				"Highest Value", [Max],
+				[Cardinality],
+				[Max Length]
 			)
 		),
 		SELECTCOLUMNS(
