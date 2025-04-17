@@ -133,10 +133,10 @@ VAR _columns =
 			)
 		),
 		SELECTCOLUMNS(
-		GROUPBY(FILTER(_dependencies, [Referenced Type] IN {"MEASURE", "CALC_COLUMN"} && [Type] = "CALC_COLUMN"), [Object], [Table], "Referenced Calculations", COUNTX(CURRENTGROUP(),1)),
+		GROUPBY(FILTER(_dependencies, [Referenced Type] = "MEASURE" && [Type] = "CALC_COLUMN"), [Object], [Table], "Referenced Measures", COUNTX(CURRENTGROUP(),1)),
 			"Column", [Object],
 			[Table],
-			[Referenced Calculations]
+			[Referenced Measures]
 		)
 	)
 VAR _tables =
@@ -183,9 +183,9 @@ VAR _measures =
 				)
 		),
 		SELECTCOLUMNS(
-			GROUPBY(FILTER(_dependencies, [Referenced Type] IN {"MEASURE", "CALC_COLUMN"} && [Type] = "Measure"), [Object], "Referenced Calculations", COUNTX(CURRENTGROUP(),[Table])),
+			GROUPBY(FILTER(_dependencies, [Referenced Type] = "MEASURE" && [Type] = "Measure"), [Object], "Referenced Measures", COUNTX(CURRENTGROUP(),[Table])),
 				"Measure", [Object],
-				[Referenced Calculations]
+				[Referenced Measures]
 		)
 	)
 VAR _relationships =
