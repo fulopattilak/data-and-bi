@@ -48,26 +48,21 @@ VAR _iteratorFunctions =
 
 
 VAR _refreshGranularity =
-	SELECTCOLUMNS(
+	DATATABLE("Granularity",STRING,"Granularity ID",INTEGER,
 		{
-			("Invalid", -1),
-			("Day(s)", 0),
-			("Month(s)", 1),
-			("Quarter(s)", 2),
-			("Year(s)", 3)
-		},
-		"Granularity", [Value1],
-		"Granularity ID", [Value2]
+			{"Invalid", -1},
+			{"Day(s)", 0},
+			{"Month(s)", 1},
+			{"Quarter(s)", 2},
+			{"Year(s)", 3}
+		}
 	)
 VAR _refreshMode =
-	SELECTCOLUMNS(
+	DATATABLE("Refresh Mode", STRING, "Refresh Mode ID", INTEGER, "Refresh Mode Description", STRING,
 		{
-			("Import", 0, "Creates import partitions during incremental refresh."),
-			("Hybrid", 1, "Creates import and DirectQuery partitions during incremental refresh.")
-		},
-		"Refresh Mode", [Value1],
-		"Refresh Mode ID", [Value2],
-		"Refresh Mode Description", [Value3]
+			{"Import", 0, "Creates import partitions during incremental refresh."},
+			{"Hybrid", 1, "Creates import and DirectQuery partitions during incremental refresh."}
+		}
 	)
 
 -- STAGING tables
