@@ -50,15 +50,14 @@ VAR _iteratorFunctions =
 VAR _refreshGranularity =
 	SELECTCOLUMNS(
 		{
-			("Invalid", -1, "Invalid granularity."),
-			("Day(s)", 0, "Day granularity."),
-			("Month(s)", 1, "Month granularity."),
-			("Quarter(s)", 2, "Quarter granularity."),
-			("Year(s)", 3, "Year granularity.")
+			("Invalid", -1),
+			("Day(s)", 0),
+			("Month(s)", 1),
+			("Quarter(s)", 2),
+			("Year(s)", 3)
 		},
 		"Granularity", [Value1],
-		"Granularity ID", [Value2],
-		"Description", [Value3]
+		"Granularity ID", [Value2]
 	)
 VAR _refreshMode =
 	SELECTCOLUMNS(
@@ -80,13 +79,6 @@ SELECTCOLUMNS(
 	"Role", [Name],
 	"Description", [Description]
 )
-VAR _rlsFiltersTbl =
- 	SELECTCOLUMNS(
-		INFO.TABLEPERMISSIONS(),
-		"Role ID", [RoleID],
-		"RLS Table ID", [TableID],
-		"Filter Expression", [FilterExpression]
-	)
 VAR _tablesTbl =
 	SELECTCOLUMNS(
 		INFO.TABLES(),
@@ -95,38 +87,56 @@ VAR _tablesTbl =
 	)
 	
 --OUTPUT tables
-	
+
+VAR _dependencies =
+	SELECTCOLUMNS(INFO.CALCDEPENDENCY(),
+		"Dependencies", BLANK(),
+		"Object", [OBJECT],
+		"Table", [TABLE],
+		"Type", LOWER([OBJECT_TYPE]),
+		"Referenced Object", [REFERENCED_OBJECT],
+		"Referenced Table", [REFERENCED_TABLE],
+		"Referenced Type", LOWER([REFERENCED_OBJECT_TYPE])
+	)
 VAR _columns =
-	NATURALINNERJOIN(
+	NATURALLEFTOUTERJOIN(
 		NATURALINNERJOIN(
-			SELECTCOLUMNS(
-				INFO.VIEW.COLUMNS(),
-				"Columns", BLANK(),
-				[Table],
-				"Column", [Name],
-				[Description],
-				[Expression],
-				"Format String", [FormatString]
+			NATURALINNERJOIN(
+				SELECTCOLUMNS(
+					INFO.VIEW.COLUMNS(),
+					"Columns", BLANK(),
+					[Table],
+					"Column", [Name],
+					[Description],
+					[Expression],
+					"Format String", [FormatString]
+				),
+				SELECTCOLUMNS(
+					COLUMNSTATISTICS(),
+					"Table", [Table Name],
+					"Column", [Column Name],
+					"Lowest Value", [Min],
+					"Highest Value", [Max],
+					[Cardinality],
+					[Max Length]
+				)
 			),
 			SELECTCOLUMNS(
-				COLUMNSTATISTICS(),
-				"Table", [Table Name],
-				"Column", [Column Name],
-				"Lowest Value", [Min],
-				"Highest Value", [Max],
-				[Cardinality],
-				[Max Length]
+				INFO.VIEW.COLUMNS(),
+				[Table],
+				"Column", [Name],
+				"Data Type", [DataType],
+				"Is Hidden", [IsHidden],
+				"Is Unique", [IsUnique],
+				"Sorted By", [SortByColumn],
+				"Category", [DataCategory]
 			)
 		),
 		SELECTCOLUMNS(
-			INFO.VIEW.COLUMNS(),
+		GROUPBY(FILTER(_dependencies, [Referenced Type] IN {"MEASURE", "CALC_COLUMN"} && [Type] = "CALC_COLUMN"), [Object], [Table], "Referenced Calculations", COUNTX(CURRENTGROUP(),1)),
+			"Column", [Object],
 			[Table],
-			"Column", [Name],
-			"Data Type", [DataType],
-			"Is Hidden", [IsHidden],
-			"Is Unique", [IsUnique],
-			"Sorted By", [SortByColumn],
-			"Category", [DataCategory]
+			[Referenced Calculations]
 		)
 	)
 VAR _tables =
@@ -146,30 +156,37 @@ VAR _tables =
 		)
 	)
 VAR _measures =
-	SELECTCOLUMNS(
-		INFO.VIEW.MEASURES(),
-		"Measures", BLANK(),
-		"Measure", [Name],
-		[Description],
-		"Data Type", [DataType],
-		[Expression], 
-		"Format String", [FormatStringDefinition], 
-		[Table], 
-		"Display Folder", [DisplayFolder],
-		"Is Hidden", [IsHidden],
-		[State],
-		"Expression Length", LEN([Expression]),
-		"Is Iterator",
-			IF (
-			    COUNTROWS (
-			        FILTER (
-			            _iteratorFunctions,
-			            CONTAINSSTRING ([Expression], [Value])
-			        )
-			    ) > 0,
-			    TRUE,
-			    FALSE
-			)
+	NATURALLEFTOUTERJOIN(
+		SELECTCOLUMNS(
+			INFO.VIEW.MEASURES(),
+			"Measures", BLANK(),
+			"Measure", [Name],
+			[Description],
+			"Data Type", [DataType],
+			[Expression], 
+			"Format String", [FormatStringDefinition], 
+			[Table], 
+			"Display Folder", [DisplayFolder],
+			"Is Hidden", [IsHidden],
+			[State],
+			"Expression Length", LEN([Expression]),
+			"Is Iterator",
+				IF (
+				    COUNTROWS (
+				        FILTER (
+				            _iteratorFunctions,
+				            CONTAINSSTRING ([Expression], [Value])
+				        )
+				    ) > 0,
+				    TRUE,
+				    FALSE
+				)
+		),
+		SELECTCOLUMNS(
+			GROUPBY(FILTER(_dependencies, [Referenced Type] IN {"MEASURE", "CALC_COLUMN"} && [Type] = "Measure"), [Object], "Referenced Calculations", COUNTX(CURRENTGROUP(),[Table])),
+				"Measure", [Object],
+				[Referenced Calculations]
+		)
 	)
 VAR _relationships =
 	SELECTCOLUMNS(
@@ -202,13 +219,21 @@ VAR _rlsRoles =
 		[Description]
 	)
 VAR _rlsFilters =
-	SELECTCOLUMNS(
-		_rlsFiltersTbl,
-		"RLS Filters", BLANK(),
-		"Role", MINX(FILTER(_rlsTbl, [Role ID] = [RLS Role ID]), [Role]),
-		"Table", MINX(FILTER(_tablesTbl, [Table ID] = [RLS Table ID]), [Table]),
-		[Filter Expression]
-	)
+	VAR _rlsFiltersTbl =
+		SELECTCOLUMNS(
+			INFO.TABLEPERMISSIONS(),
+			"Role ID", [RoleID],
+			"RLS Table ID", [TableID],
+			"Filter Expression", [FilterExpression]
+		)
+	RETURN
+		SELECTCOLUMNS(
+			_rlsFiltersTbl,
+			"RLS Filters", BLANK(),
+			"Role", MINX(FILTER(_rlsTbl, [Role ID] = [RLS Role ID]), [Role]),
+			"Table", MINX(FILTER(_tablesTbl, [Table ID] = [RLS Table ID]), [Table]),
+			[Filter Expression]
+		)
 VAR _otherQueries =
 	SELECTCOLUMNS(
 		INFO.EXPRESSIONS(),
@@ -217,19 +242,6 @@ VAR _otherQueries =
 		"Description", [Description],
 		"Expression", [Expression]
 	)
-VAR _dependencies =
-	SELECTCOLUMNS(INFO.CALCDEPENDENCY(),
-		"Dependencies", BLANK(),
-		"Item", [OBJECT],
-		"Table", [TABLE],
-		"Type", [OBJECT_TYPE],
-		"Expression", [EXPRESSION],
-		"Referenced Item", [REFERENCED_OBJECT],
-		"Referenced Table", [REFERENCED_TABLE],
-		"Referenced Type", [REFERENCED_OBJECT_TYPE],
-		"Referenced Expression", [REFERENCED_EXPRESSION]
-	)
-
 EVALUATE
 	_info
 EVALUATE
