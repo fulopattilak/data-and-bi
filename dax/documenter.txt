@@ -92,37 +92,29 @@ VAR _dependencies =
 		"Referenced Type", [REFERENCED_OBJECT_TYPE]
 	)
 VAR _columns =
-	NATURALLEFTOUTERJOIN(
-		NATURALINNERJOIN(
-			SELECTCOLUMNS(
-				INFO.VIEW.COLUMNS(),
-				"Columns", BLANK(),
-				[Table],
-				"Column", [Name],
-				[Description],
-				[Expression],
-				"Format String", [FormatString],
-				"Data Type", [DataType],
-				"Is Hidden", [IsHidden],
-				"Is Unique", [IsUnique],
-				"Sorted By", [SortByColumn],
-				"Category", [DataCategory]
-			),
-			SELECTCOLUMNS(
-				COLUMNSTATISTICS(),
-				"Table", [Table Name],
-				"Column", [Column Name],
-				"Lowest Value", [Min],
-				"Highest Value", [Max],
-				[Cardinality],
-				[Max Length]
-			)
+	NATURALINNERJOIN(
+		SELECTCOLUMNS(
+			INFO.VIEW.COLUMNS(),
+			"Columns", BLANK(),
+			[Table],
+			"Column", [Name],
+			[Description],
+			[Expression],
+			"Format String", [FormatString],
+			"Data Type", [DataType],
+			"Is Hidden", [IsHidden],
+			"Is Unique", [IsUnique],
+			"Sorted By", [SortByColumn],
+			"Category", [DataCategory]
 		),
 		SELECTCOLUMNS(
-		GROUPBY(FILTER(_dependencies, [Referenced Type] = "MEASURE" && [Type] = "CALC_COLUMN"), [Object], [Table], "Referenced Measures", COUNTX(CURRENTGROUP(),1)),
-			"Column", [Object],
-			[Table],
-			[Referenced Measures]
+			COLUMNSTATISTICS(),
+			"Table", [Table Name],
+			"Column", [Column Name],
+			"Lowest Value", [Min],
+			"Highest Value", [Max],
+			[Cardinality],
+			[Max Length]
 		)
 	)
 VAR _tables =
@@ -143,49 +135,56 @@ VAR _tables =
 	)
 VAR _measures =
 	NATURALLEFTOUTERJOIN(
-		SELECTCOLUMNS(
-			INFO.VIEW.MEASURES(),
-			"Measures", BLANK(),
-			"Measure", [Name],
-			[Description],
-			"Data Type", [DataType],
-			[Expression], 
-			"Format String", [FormatStringDefinition], 
-			[Table], 
-			"Display Folder", [DisplayFolder],
-			"Is Hidden", [IsHidden],
-			[State],
-			"Expression Length", LEN([Expression]),
-			"Is Iterator",
-				IF (
-				    COUNTROWS (
-				        FILTER (
-				            _iteratorFunctions,
-				            CONTAINSSTRING ([Expression], [Value])
-				        )
-				    ) > 0,
-				    TRUE,
-				    FALSE
-				),
-			"Variables",
-				VAR _cntVar =
-					PATHLENGTH(
-						SUBSTITUTE(
-						SUBSTITUTE(
-						SUBSTITUTE(
-						SUBSTITUTE( UPPER([Expression]),
-							" ",""),
-							"|", "~"),
-							UNICHAR(9), ""),
-							UNICHAR(10) & "VAR","|")
-					) - 1
-				RETURN
-					IF(_cntVar <= 0,BLANK(), _cntVar)
+		NATURALLEFTOUTERJOIN(
+			SELECTCOLUMNS(
+				INFO.VIEW.MEASURES(),
+				"Measures", BLANK(),
+				"Measure", [Name],
+				[Description],
+				"Data Type", [DataType],
+				[Expression], 
+				"Format String", [FormatStringDefinition], 
+				[Table], 
+				"Display Folder", [DisplayFolder],
+				"Is Hidden", [IsHidden],
+				[State],
+				"Expression Length", LEN([Expression]),
+				"Is Iterator",
+					IF (
+						COUNTROWS (
+							FILTER (
+								_iteratorFunctions,
+								CONTAINSSTRING ([Expression], [Value])
+							)
+						) > 0,
+						TRUE,
+						FALSE
+					),
+				"Variables",
+					VAR _cntVar =
+						PATHLENGTH(
+							SUBSTITUTE(
+							SUBSTITUTE(
+							SUBSTITUTE(
+							SUBSTITUTE( UPPER([Expression]),
+								" ",""),
+								"|", "~"),
+								UNICHAR(9), ""),
+								UNICHAR(10) & "VAR","|")
+						) - 1
+					RETURN
+						IF(_cntVar <= 0,BLANK(), _cntVar)
+			),
+			SELECTCOLUMNS(
+				GROUPBY(FILTER(_dependencies, [Referenced Type] = "MEASURE" && [Type] = "MEASURE"), [Object], "Referenced Measures", COUNTX(CURRENTGROUP(),1)),
+					"Measure", [Object],
+					[Referenced Measures]
+			)
 		),
 		SELECTCOLUMNS(
-			GROUPBY(FILTER(_dependencies, [Referenced Type] = "MEASURE" && [Type] = "MEASURE"), [Object], "Referenced Measures", COUNTX(CURRENTGROUP(),1)),
-				"Measure", [Object],
-				[Referenced Measures]
+		GROUPBY(FILTER(_dependencies, [Type] = "MEASURE"), [Object], "Referenced Objects", COUNTX(CURRENTGROUP(),1)),
+			"Measure", [Object],
+			[Referenced Objects]
 		)
 	)
 VAR _relationships =
