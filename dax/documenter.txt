@@ -166,7 +166,21 @@ VAR _measures =
 				    ) > 0,
 				    TRUE,
 				    FALSE
-				)
+				),
+			"Variables",
+				VAR _cntVar =
+					PATHLENGTH(
+						SUBSTITUTE(
+						SUBSTITUTE(
+						SUBSTITUTE(
+						SUBSTITUTE( UPPER([Expression]),
+							" ",""),
+							"|", "~"),
+							UNICHAR(9), ""),
+							UNICHAR(10) & "VAR","|")
+					) - 1
+				RETURN
+					IF(_cntVar <= 0,BLANK(), _cntVar)
 		),
 		SELECTCOLUMNS(
 			GROUPBY(FILTER(_dependencies, [Referenced Type] = "MEASURE" && [Type] = "MEASURE"), [Object], "Referenced Measures", COUNTX(CURRENTGROUP(),1)),
