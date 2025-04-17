@@ -5,7 +5,7 @@ Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
 */
 
 DEFINE
-
+ 
 VAR _info = 
 	{
 		("POWER BI",,"Created at: ",FORMAT(UTCNOW(), "d. mmm yyyy, h:nn") & " UTC"),
@@ -22,9 +22,30 @@ VAR _info =
 		(,"Query 8", "RLS Roles", "Lists the RLS roles that are set (if any)."),
 		(,"Query 9", "RLS Filters", "Describes the filtering criteria for RLS roles."),
 		(,"Query 10", "Dependencies", "Describes table column and measure dependencies.")
-}
+	}
 
 -- DIM tables
+
+VAR _iteratorFunctions = 
+	{
+		"SUMX(",
+		"AVERAGEX(",
+		"MINX(",
+		"MAXX(",
+		"COUNTX(",
+		"RANKX(",
+		"PRODUCTX(",
+		"FILTER(",
+		"CALCULATETABLE(",
+		"ADDCOLUMNS(",
+		"GENERATE(",
+		"GENERATEALL(",
+		"GROUPBY(",
+		"SELECTCOLUMNS(",
+		"SUMMARIZE(",
+		"SUMMARIZECOLUMNS("
+	}
+
 
 VAR _refreshGranularity =
 	SELECTCOLUMNS(
@@ -136,7 +157,19 @@ VAR _measures =
 		[Table], 
 		"Display Folder", [DisplayFolder],
 		"Is Hidden", [IsHidden],
-		[State]
+		[State],
+		"Expression Length", LEN([Expression]),
+		"Is Iterator",
+			IF (
+			    COUNTROWS (
+			        FILTER (
+			            _iteratorFunctions,
+			            CONTAINSSTRING ([Expression], [Value])
+			        )
+			    ) > 0,
+			    TRUE,
+			    FALSE
+			)
 	)
 VAR _relationships =
 	SELECTCOLUMNS(
