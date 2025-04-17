@@ -45,8 +45,6 @@ VAR _iteratorFunctions =
 		"SUMMARIZE(",
 		"SUMMARIZECOLUMNS("
 	}
-
-
 VAR _refreshGranularity =
 	DATATABLE("Granularity",STRING,"Granularity ID",INTEGER,
 		{
@@ -68,12 +66,12 @@ VAR _refreshMode =
 -- STAGING tables
 
 VAR _rlsTbl =
-SELECTCOLUMNS(
-	INFO.ROLES(),
-	"RLS Role ID", [ID],
-	"Role", [Name],
-	"Description", [Description]
-)
+	SELECTCOLUMNS(
+		INFO.ROLES(),
+		"RLS Role ID", [ID],
+		"Role", [Name],
+		"Description", [Description]
+	)
 VAR _tablesTbl =
 	SELECTCOLUMNS(
 		INFO.TABLES(),
@@ -171,7 +169,7 @@ VAR _measures =
 				)
 		),
 		SELECTCOLUMNS(
-			GROUPBY(FILTER(_dependencies, [Referenced Type] = "MEASURE" && [Type] = "Measure"), [Object], "Referenced Measures", COUNTX(CURRENTGROUP(),[Table])),
+			GROUPBY(FILTER(_dependencies, [Referenced Type] = "MEASURE" && [Type] = "MEASURE"), [Object], "Referenced Measures", COUNTX(CURRENTGROUP(),1)),
 				"Measure", [Object],
 				[Referenced Measures]
 		)
