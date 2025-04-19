@@ -277,7 +277,7 @@ VAR _calcItems =
 			)
 		),
 		"Calculation Items", BLANK(),
-		[Table],
+		"Calculation Group", [Table],
 		"Calculation Item", [Name],
 		[Description],
 		[Expression]
