@@ -18,10 +18,12 @@ VAR _info =
 		(,"Query 4", "Measures", "Describes all measures."),
 		(,"Query 5", "Relationships","Describes the relationships between tables."),
 		(,"Query 6", "Other Queries","Describes the queries that are used in Power Query, but not loaded to the model."),
-		(,"Query 7", "Incremental Tables", "Describes the incremental refresh policy of the tables (if any)."),
-		(,"Query 8", "RLS Roles", "Lists the RLS roles that are set (if any)."),
+		(,"Query 7", "Incremental Tables", "Describes the incremental refresh policy of the tables."),
+		(,"Query 8", "RLS Roles", "Lists the RLS roles that are set."),
 		(,"Query 9", "RLS Filters", "Describes the filtering criteria for RLS roles."),
-		(,"Query 10", "Dependencies", "Describes table column and measure dependencies.")
+		(,"Query 10", "Calculation Groups", "Lists Calculation groups."),
+		(,"Query 11", "Calculation Items", "Describes the Calculation items defined inside Calculation groups."),
+		(,"Query 12", "Dependencies", "Describes table column and measure dependencies.")
 	}
 
 -- DIM tables
@@ -79,6 +81,16 @@ VAR _tablesTbl =
 			"Table", [Name]
 	)
 
+VAR _calcGroupsTbl =
+	NATURALINNERJOIN(
+		SELECTCOLUMNS(
+			INFO.CALCULATIONGROUPS(),
+			"Calculation Group ID", [ID],
+			"Table ID", [TableID],
+			[Description]
+		),
+		_tablesTbl
+	)
 --OUTPUT tables
 
 VAR _dependencies =
@@ -240,26 +252,49 @@ VAR _otherQueries =
 		"Description", [Description],
 		"Expression", [Expression]
 	)
-EVALUATE
-	_info
-EVALUATE
-	_tables
-EVALUATE
-	_columns
-EVALUATE
-	_measures
-EVALUATE
-	_relationships
-EVALUATE
-	_otherQueries
-EVALUATE
-	_incrementalTables
-EVALUATE
-	_rlsRoles
-EVALUATE
-	_rlsFilters
-EVALUATE
-	_dependencies
+VAR _calcGroups =
+	SELECTCOLUMNS(
+		_calcGroupsTbl,
+		"Calculation Groups", BLANK(),
+		"Calculation Group", [Table],
+		[Description]
+	)
+VAR _calcItems =
+	SELECTCOLUMNS(
+		NATURALINNERJOIN(
+			SELECTCOLUMNS(
+				INFO.CALCULATIONITEMS(),
+				"Calculation Group ID", [CalculationGroupID],
+				[Name],
+				[Description],
+				[Expression]
+
+			),
+			SELECTCOLUMNS(
+				_calcGroupsTbl,
+				[Calculation Group ID],
+				[Table]
+			)
+		),
+		"Calculation Items", BLANK(),
+		[Table],
+		"Calculation Item", [Name],
+		[Description],
+		[Expression]
+	)
+	
+EVALUATE _info
+EVALUATE _tables
+EVALUATE _columns
+EVALUATE _measures
+EVALUATE _relationships
+EVALUATE _otherQueries
+EVALUATE _incrementalTables
+EVALUATE _rlsRoles
+EVALUATE _rlsFilters
+EVALUATE _calcGroups
+EVALUATE _calcItems
+EVALUATE _dependencies
 
 /*
 This query is intended to be run in 'DAX Studio.
