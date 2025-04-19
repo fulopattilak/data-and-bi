@@ -161,19 +161,18 @@ VAR _measures =
 						FALSE
 					),
 				"Variables",
-					VAR _cntVar =
-						PATHLENGTH(
-							SUBSTITUTE(
-							SUBSTITUTE(
-							SUBSTITUTE(
-							SUBSTITUTE( UPPER([Expression]),
-								" ",""),
-								"|", "~"),
-								UNICHAR(9), ""),
-								UNICHAR(10) & "VAR","|")
-						) - 1
+					VAR _exp =
+						SUBSTITUTE(
+						SUBSTITUTE(
+						SUBSTITUTE(
+						SUBSTITUTE( UPPER([Expression]),
+							" ",""),
+							"|", "~"),
+							UNICHAR(9), ""),
+							UNICHAR(10) & "VAR","|")
+					VAR _cnt = PATHLENGTH(_exp) - 1 + IF(LEFT(_exp, 3) = "VAR", 1,0)
 					RETURN
-						IF(_cntVar <= 0,BLANK(), _cntVar)
+						IF(_cnt <= 0,BLANK(), _cnt)
 			),
 			SELECTCOLUMNS(
 				GROUPBY(FILTER(_dependencies, [Referenced Type] = "MEASURE" && [Type] = "MEASURE"), [Object], "Referenced Measures", COUNTX(CURRENTGROUP(),1)),
