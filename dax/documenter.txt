@@ -104,53 +104,30 @@ VAR _dependencies =
 		"Referenced Type", [REFERENCED_OBJECT_TYPE]
 	)
 VAR _columns =
-	SELECTCOLUMNS(
-		NATURALINNERJOIN(
-			SELECTCOLUMNS(
-				INFO.VIEW.COLUMNS(),
-				[Table],
-				"Column", [Name],
-				[Description],
-				[Expression],
-				"Format String", [FormatString],
-				"Data Type", [DataType],
-				"Is Hidden", [IsHidden],
-				"Is Unique", [IsUnique],
-				"Sorted By", [SortByColumn],
-				"Category", [DataCategory]
-			),
-			SELECTCOLUMNS(
-				COLUMNSTATISTICS(),
-				"Table", [Table Name],
-				"Column", [Column Name],
-				"Lowest Value", [Min],
-				"Highest Value", [Max],
-				[Cardinality],
-				[Max Length]
-			)
+	NATURALINNERJOIN(
+		SELECTCOLUMNS(
+			INFO.VIEW.COLUMNS(),
+			"Columns", BLANK(),
+			[Table],
+			"Column", [Name],
+			[Description],
+			[Expression],
+			"Format String", [FormatString],
+			"Data Type", [DataType],
+			"Is Hidden", [IsHidden],
+			"Is Unique", [IsUnique],
+			"Sorted By", [SortByColumn],
+			"Category", [DataCategory]
 		),
-		"Columns", BLANK(),
-		[Table],
-		[Column],
-		[Description],
-		[Expression],
-		[Format String],
-		[Data Type],
-		[Is Hidden],
-		[Is Unique],
-		[Sorted By],
-		[Category],
-		[Lowest Value],
-		[Highest Value],
-		[Cardinality],
-		"Max Length", 
-			COALESCE(
-				[Max Length],
-				IF(LEN([Highest Value]) > LEN([Lowest Value]),
-					LEN([Highest Value]),
-					LEN([Lowest Value])
-				)
-			)
+		SELECTCOLUMNS(
+			COLUMNSTATISTICS(),
+			"Table", [Table Name],
+			"Column", [Column Name],
+			"Lowest Value", [Min],
+			"Highest Value", [Max],
+			[Cardinality],
+			[Max Length]
+		)
 	)
 VAR _tables =
 	NATURALINNERJOIN(
