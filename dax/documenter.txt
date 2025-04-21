@@ -1,8 +1,6 @@
-/*
-This query is intended to be run in 'DAX Studio.
-It is designed to speed up report documentation.
-Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
-*/
+// This query is intended to be run in 'DAX Studio.
+// It is designed to speed up report documentation.
+// Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
 
 DEFINE
  
@@ -26,7 +24,7 @@ VAR _info =
 		(,"Query 12", "Dependencies", "Describes table column and measure dependencies.")
 	}
 
--- DIM tables
+// DIM tables
 
 VAR _iteratorFunctions = 
 	{
@@ -65,7 +63,7 @@ VAR _refreshMode =
 		}
 	)
 
--- STAGING tables
+// STAGING tables
 
 VAR _rlsTbl =
 	SELECTCOLUMNS(
@@ -91,7 +89,7 @@ VAR _calcGroupsTbl =
 		),
 		_tablesTbl
 	)
---OUTPUT tables
+// OUTPUT tables
 
 VAR _dependencies =
 	SELECTCOLUMNS(INFO.CALCDEPENDENCY(),
@@ -296,8 +294,7 @@ EVALUATE _calcGroups
 EVALUATE _calcItems
 EVALUATE _dependencies
 
-/*
-This query is intended to be run in 'DAX Studio.
-It is designed to speed up report documentation.
-Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
-*/
+
+// This query is intended to be run in 'DAX Studio.
+// It is designed to speed up report documentation.
+// Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
