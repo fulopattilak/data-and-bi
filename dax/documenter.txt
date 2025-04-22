@@ -164,7 +164,9 @@ VAR _measures =
 						COUNTROWS (
 							FILTER (
 								_iteratorFunctions,
-								CONTAINSSTRING ([Expression], [Value])
+								CONTAINSSTRING (
+                                    SUBSTITUTE(UPPER([Expression]),
+							        " ",""), [Value])
 							)
 						) > 0,
 						TRUE,
