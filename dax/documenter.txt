@@ -109,7 +109,7 @@ VAR _columns =
 			[Table],
 			"Column", [Name],
 			[Description],
-			[Expression],
+			"DAX", [Expression],
 			"Format String", [FormatString],
 			"Data Type", [DataType],
 			"Is Hidden", [IsHidden],
@@ -129,18 +129,25 @@ VAR _columns =
 	)
 VAR _tables =
 	NATURALINNERJOIN(
-		SELECTCOLUMNS(
-			INFO.VIEW.TABLES(),
-			"Tables", BLANK(),
-			"Table", [Name],
-			[Description],
-			[Expression],
-			"Is Hidden", [IsHidden],
-			"Storage Mode", [StorageMode]
+		NATURALINNERJOIN(
+			SELECTCOLUMNS(
+				INFO.VIEW.TABLES(),
+				"Tables", BLANK(),
+				"Table", [Name],
+				[Description],
+				"DAX", [Expression],
+				"Is Hidden", [IsHidden],
+				"Storage Mode", [StorageMode]
+			),
+			SELECTCOLUMNS(FILTER(_columns, [Category] = "RowNumber"),
+				[Table],
+				"Rows", [Cardinality]
+			)
 		),
-		SELECTCOLUMNS(FILTER(_columns, [Category] = "RowNumber"),
-			[Table],
-			"Rows", [Cardinality]
+		SELECTCOLUMNS(
+			INFO.PARTITIONS(),
+			"Table", [Name],
+			"M Query", [QueryDefinition]
 		)
 	)
 VAR _measures =
@@ -152,13 +159,13 @@ VAR _measures =
 				"Measure", [Name],
 				[Description],
 				"Data Type", [DataType],
-				[Expression], 
+				"DAX", [Expression], 
 				"Format String", [FormatStringDefinition], 
 				[Table], 
 				"Display Folder", [DisplayFolder],
 				"Is Hidden", [IsHidden],
 				[State],
-				"Expression Length", LEN([Expression]),
+				"DAX Length", LEN([Expression]),
 				"Is Iterator",
 					IF (
 						COUNTROWS (
@@ -234,7 +241,7 @@ VAR _rlsFilters =
 			INFO.TABLEPERMISSIONS(),
 			"Role ID", [RoleID],
 			"RLS Table ID", [TableID],
-			"Filter Expression", [FilterExpression]
+			"DAX", [FilterExpression]
 		)
 	RETURN
 		SELECTCOLUMNS(
@@ -242,7 +249,7 @@ VAR _rlsFilters =
 			"RLS Filters", BLANK(),
 			"Role", MINX(FILTER(_rlsTbl, [Role ID] = [RLS Role ID]), [Role]),
 			"Table", MINX(FILTER(_tablesTbl, [Table ID] = [RLS Table ID]), [Table]),
-			[Filter Expression]
+			[DAX]
 		)
 VAR _otherQueries =
 	SELECTCOLUMNS(
@@ -250,7 +257,7 @@ VAR _otherQueries =
 		"Other Queries", BLANK(),
 		"Query Name", [Name],
 		"Description", [Description],
-		"Expression", [Expression]
+		"M Query", [Expression]
 	)
 VAR _calcGroups =
 	SELECTCOLUMNS(
@@ -267,7 +274,7 @@ VAR _calcItems =
 				"Calculation Group ID", [CalculationGroupID],
 				[Name],
 				[Description],
-				[Expression]
+				"DAX", [Expression]
 
 			),
 			SELECTCOLUMNS(
@@ -280,7 +287,7 @@ VAR _calcItems =
 		"Calculation Group", [Table],
 		"Calculation Item", [Name],
 		[Description],
-		[Expression]
+		[DAX]
 	)
 	
 EVALUATE _info
