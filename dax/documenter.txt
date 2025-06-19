@@ -135,7 +135,6 @@ VAR _tables =
 				"Tables", BLANK(),
 				"Table", [Name],
 				[Description],
-				"DAX", [Expression],
 				"Is Hidden", [IsHidden],
 				"Storage Mode", [StorageMode]
 			),
@@ -147,7 +146,7 @@ VAR _tables =
 		SELECTCOLUMNS(
 			INFO.PARTITIONS(),
 			"Table", [Name],
-			"M Query", [QueryDefinition]
+			"DAX or Query", [QueryDefinition]
 		)
 	)
 VAR _measures =
@@ -257,7 +256,7 @@ VAR _otherQueries =
 		"Other Queries", BLANK(),
 		"Query Name", [Name],
 		"Description", [Description],
-		"M Query", [Expression]
+		"Query", [Expression]
 	)
 VAR _calcGroups =
 	SELECTCOLUMNS(
