@@ -80,7 +80,7 @@ VAR _tablesTbl =
 	)
 
 VAR _calcGroupsTbl =
-	NATURALINNERJOIN(
+	NATURALLEFTOUTERJOIN(
 		SELECTCOLUMNS(
 			INFO.CALCULATIONGROUPS(),
 			"Calculation Group ID", [ID],
@@ -102,7 +102,7 @@ VAR _dependencies =
 		"Referenced Type", [REFERENCED_OBJECT_TYPE]
 	)
 VAR _columns =
-	NATURALINNERJOIN(
+	NATURALLEFTOUTERJOIN(
 		SELECTCOLUMNS(
 			INFO.VIEW.COLUMNS(),
 			"Columns", BLANK(),
@@ -225,7 +225,7 @@ VAR _incrementalTables =
 		"Table", MINX(FILTER(_tablesTbl, [Table ID] = [TableID]), [Table]),
 		"Rolling Window History", [RollingWindowPeriods] & " " & MINX(FILTER(_refreshGranularity, [RollingWindowGranularity] = [Granularity ID]), [Granularity]),
 		"Incremental Window", [IncrementalPeriods] & " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]),
-		"Incremental Window End",  [IncrementalPeriodsOffset] and " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]) & " from Refresh Date",
+		"Incremental Window End",  [IncrementalPeriodsOffset] & " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]) & " from Refresh Date",
 		"Refresh Mode", MINX(FILTER(_refreshMode, [Refresh Mode ID] = [PolicyType]), [Refresh Mode])
 	)
 VAR _rlsRoles =
@@ -267,7 +267,7 @@ VAR _calcGroups =
 	)
 VAR _calcItems =
 	SELECTCOLUMNS(
-		NATURALINNERJOIN(
+		NATURALLEFTOUTERJOIN(
 			SELECTCOLUMNS(
 				INFO.CALCULATIONITEMS(),
 				"Calculation Group ID", [CalculationGroupID],
