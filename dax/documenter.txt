@@ -225,7 +225,7 @@ VAR _incrementalTables =
 		"Table", MINX(FILTER(_tablesTbl, [Table ID] = [TableID]), [Table]),
 		"Rolling Window History", [RollingWindowPeriods] & " " & MINX(FILTER(_refreshGranularity, [RollingWindowGranularity] = [Granularity ID]), [Granularity]),
 		"Incremental Window", [IncrementalPeriods] & " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]),
-		"Incremental Window End",  "Refresh Date - " & [IncrementalPeriodsOffset] & " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]),
+		"Incremental Window End",  [IncrementalPeriodsOffset] and " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]) & " from Refresh Date",
 		"Refresh Mode", MINX(FILTER(_refreshMode, [Refresh Mode ID] = [PolicyType]), [Refresh Mode])
 	)
 VAR _rlsRoles =
