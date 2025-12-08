@@ -128,26 +128,30 @@ VAR _columns =
 		)
 	)
 VAR _tables =
-	NATURALLEFTOUTERJOIN(
+	SELECTCOLUMNS(
 		NATURALLEFTOUTERJOIN(
-			SELECTCOLUMNS(
-				INFO.VIEW.TABLES(),
-				"Tables", BLANK(),
-				"Table", [Name],
-				[Description],
-				"Is Hidden", [IsHidden],
-				"Storage Mode", [StorageMode]
+			NATURALLEFTOUTERJOIN(
+				SELECTCOLUMNS(
+					INFO.VIEW.TABLES(),
+					"Tables", BLANK(),
+					"Table ID", [ID],
+					"Table", [Name],
+					[Description],
+					"Is Hidden", [IsHidden],
+					"Storage Mode", [StorageMode]
+				),
+				SELECTCOLUMNS(FILTER(_columns, [Category] = "RowNumber"),
+					[Table],
+					"Rows", [Cardinality]
+				)
 			),
-			SELECTCOLUMNS(FILTER(_columns, [Category] = "RowNumber"),
-				[Table],
-				"Rows", [Cardinality]
+			SELECTCOLUMNS(
+				INFO.PARTITIONS(),
+				"Table ID", [TableID],
+				"DAX or Query", [QueryDefinition]
 			)
 		),
-		SELECTCOLUMNS(
-			INFO.PARTITIONS(),
-			"Table", [Name],
-			"DAX or Query", [QueryDefinition]
-		)
+		[Tables], [Table], [Description], [Is Hidden], [Storage Mode], [Rows], [DAX or Query]
 	)
 VAR _measures =
 	NATURALLEFTOUTERJOIN(
