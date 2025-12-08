@@ -89,19 +89,7 @@ VAR _calcGroupsTbl =
 		),
 		_tablesTbl
 	)
-// OUTPUT tables
-
-VAR _dependencies =
-	SELECTCOLUMNS(INFO.CALCDEPENDENCY(),
-		"Dependencies", BLANK(),
-		"Object", [OBJECT],
-		"Table", [TABLE],
-		"Type", [OBJECT_TYPE],
-		"Referenced Object", [REFERENCED_OBJECT],
-		"Referenced Table", [REFERENCED_TABLE],
-		"Referenced Type", [REFERENCED_OBJECT_TYPE]
-	)
-VAR _columns =
+VAR _columnsTbl =
 	NATURALLEFTOUTERJOIN(
 		SELECTCOLUMNS(
 			INFO.VIEW.COLUMNS(),
@@ -127,6 +115,28 @@ VAR _columns =
 			[Max Length]
 		)
 	)
+
+// OUTPUT tables
+
+VAR _dependencies =
+	SELECTCOLUMNS(INFO.CALCDEPENDENCY(),
+		"Dependencies", BLANK(),
+		"Object", [OBJECT],
+		"Table", [TABLE],
+		"Type", [OBJECT_TYPE],
+		"Referenced Object", [REFERENCED_OBJECT],
+		"Referenced Table", [REFERENCED_TABLE],
+		"Referenced Type", [REFERENCED_OBJECT_TYPE]
+	)
+VAR _columns =
+	SELECTCOLUMNS(
+		FILTER(
+			_columnsTbl,
+			[Category] <> "RowNumber"
+		),
+		[Columns], [Table], [Column], [Description],[DAX],[Format String], [Data Type], [Is Hidden], [Is Unique], [Sorted By], [Lowest Value], [Highest Value], [Cardinality],
+		"Max Length", COALESCE([Max Length], LEN([Highest Value]))
+	)
 VAR _tables =
 	SELECTCOLUMNS(
 		NATURALLEFTOUTERJOIN(
@@ -140,7 +150,7 @@ VAR _tables =
 					"Is Hidden", [IsHidden],
 					"Storage Mode", [StorageMode]
 				),
-				SELECTCOLUMNS(FILTER(_columns, [Category] = "RowNumber"),
+				SELECTCOLUMNS(FILTER(_columnsTbl, [Category] = "RowNumber"),
 					[Table],
 					"Rows", [Cardinality]
 				)
@@ -292,7 +302,9 @@ VAR _calcItems =
 		[Description],
 		[DAX]
 	)
-	
+
+// OUTPUT
+
 EVALUATE _info
 EVALUATE _tables
 EVALUATE _columns
