@@ -1,0 +1,13 @@
+ADDCOLUMNS(
+    ADDCOLUMNS(
+        ADDCOLUMNS(
+            SELECTCOLUMNS(GENERATESERIES(0,86399,1), "Second of day", [Value]),
+            "Time", TIME(0,0,0) + (DIVIDE([Second of day],86400))
+        ),
+        "Hour", HOUR([Time]),
+        "Minute", MINUTE([Time]),
+        "Second", SECOND([Time]),
+        "AM/PM", IF([Time] >= TIME(0,0,0) && [Time] < TIME(12,0,0),"AM", "PM")
+    ),
+    "Start of hour", TIME([Hour], 0,0)
+)
