@@ -1,0 +1,27 @@
+table 'Report refresh'
+	lineageTag: 75bf149b-2e2e-4235-b8d5-8ec5f30f006a
+
+	column 'Report refresh (UTC)'
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 7e1ca43e-8c95-46e0-a9a1-2ca13b6bff0a
+		summarizeBy: none
+		sourceColumn: Report refresh (UTC)
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Report refresh' = m
+		mode: import
+		source =
+				let
+				    Source = DateTimeZone.UtcNow(),
+				    #"Converted to Table" = #table(1, {{Source}}),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Converted to Table",{{"Column1", type datetimezone}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"Column1", "Report refresh (UTC)"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
