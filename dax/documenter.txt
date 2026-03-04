@@ -110,7 +110,7 @@ VAR _columnsTbl =
 			"Table", [Table Name],
 			"Column", [Column Name],
 			"Lowest Value", CONVERT([Min], STRING),
-			"Highest Value", CONVERT[Max], STRING),
+			"Highest Value", CONVERT([Max], STRING),
 			[Cardinality],
 			[Max Length]
 		)
