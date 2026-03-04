@@ -109,8 +109,8 @@ VAR _columnsTbl =
 			COLUMNSTATISTICS(),
 			"Table", [Table Name],
 			"Column", [Column Name],
-			"Lowest Value", [Min],
-			"Highest Value", [Max],
+			"Lowest Value", CONVERT([Min], STRING),
+			"Highest Value", CONVERT[Max], STRING),
 			[Cardinality],
 			[Max Length]
 		)
