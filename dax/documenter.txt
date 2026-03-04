@@ -142,13 +142,17 @@ VAR _tables =
 		NATURALLEFTOUTERJOIN(
 			NATURALLEFTOUTERJOIN(
 				SELECTCOLUMNS(
-					INFO.VIEW.TABLES(),
+                    ADDCOLUMNS(
+					    INFO.VIEW.TABLES(),
+                        "Is Calculated", IF([Expression] = BLANK(), "False", "True")
+                    ),
 					"Tables", BLANK(),
 					"Table ID", [ID],
 					"Table", [Name],
 					[Description],
 					"Is Hidden", [IsHidden],
-					"Storage Mode", [StorageMode]
+					"Storage Mode", [StorageMode],
+                    [Is Calculated]
 				),
 				SELECTCOLUMNS(FILTER(_columnsTbl, [Category] = "RowNumber"),
 					[Table],
@@ -161,7 +165,7 @@ VAR _tables =
 				"DAX or Query", [QueryDefinition]
 			)
 		),
-		[Tables], [Table], [Description], [Is Hidden], [Storage Mode], [Rows], [DAX or Query]
+		[Tables], [Table], [Description], [Is Hidden], [Is Calculated], [Storage Mode], [Rows], [DAX or Query]
 	)
 VAR _measures =
 	NATURALLEFTOUTERJOIN(
