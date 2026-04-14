@@ -1,6 +1,8 @@
-// This query is intended to be run in 'DAX Studio.
-// It is designed to speed up report documentation.
-// Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
+/*
+This query is intended to be run in 'DAX Studio.
+It is designed to speed up report documentation.
+Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
+*/
 
 DEFINE
  
@@ -23,8 +25,8 @@ VAR _info =
 		(,"Query 11", "Calculation Items", "Describes the Calculation items defined inside Calculation groups."),
 		(,"Query 12", "Dependencies", "Describes table column and measure dependencies.")
 	}
-
-// DIM tables
+		--(,"Query 13", "User Functions", "Lists User Defined Functions.")
+-- DIM tables
 
 VAR _iteratorFunctions = 
 	{
@@ -63,7 +65,7 @@ VAR _refreshMode =
 		}
 	)
 
-// STAGING tables
+-- STAGING tables
 
 VAR _rlsTbl =
 	SELECTCOLUMNS(
@@ -116,7 +118,7 @@ VAR _columnsTbl =
 		)
 	)
 
-// OUTPUT tables
+-- OUTPUT tables
 
 VAR _dependencies =
 	SELECTCOLUMNS(INFO.CALCDEPENDENCY(),
@@ -162,10 +164,10 @@ VAR _tables =
 			SELECTCOLUMNS(
 				INFO.PARTITIONS(),
 				"Table ID", [TableID],
-				"DAX or Query", [QueryDefinition]
+				"DAX or M-Query", [QueryDefinition]
 			)
 		),
-		[Tables], [Table], [Description], [Is Hidden], [Is Calculated], [Storage Mode], [Rows], [DAX or Query]
+		[Tables], [Table], [Description], [Is Hidden], [Is Calculated], [Storage Mode], [Rows], [DAX or M-Query]
 	)
 VAR _measures =
 	NATURALLEFTOUTERJOIN(
@@ -185,12 +187,20 @@ VAR _measures =
 				"DAX Length", LEN([Expression]),
 				"Is Iterator",
 					IF (
-						COUNTROWS (
-							FILTER (
+						COUNTROWS(
+							FILTER(
 								_iteratorFunctions,
-								CONTAINSSTRING (
-                                    SUBSTITUTE(UPPER([Expression]),
-							        " ",""), [Value])
+								CONTAINSSTRING(
+									SUBSTITUTE(
+									SUBSTITUTE(
+									SUBSTITUTE(
+									SUBSTITUTE(UPPER([Expression]),
+										" ",""),
+										UNICHAR(9), ""),
+										UNICHAR(10), ""),
+										UNICHAR(13), ""),
+									[Value]
+								)
 							)
 						) > 0,
 						TRUE,
@@ -201,7 +211,7 @@ VAR _measures =
 						SUBSTITUTE(
 						SUBSTITUTE(
 						SUBSTITUTE(
-						SUBSTITUTE( UPPER([Expression]),
+						SUBSTITUTE(UPPER([Expression]),
 							" ",""),
 							"|", "~"),
 							UNICHAR(9), ""),
@@ -274,7 +284,7 @@ VAR _otherQueries =
 		"Other Queries", BLANK(),
 		"Query Name", [Name],
 		"Description", [Description],
-		"Query", [Expression]
+		"M-Query", [Expression]
 	)
 VAR _calcGroups =
 	SELECTCOLUMNS(
@@ -306,8 +316,17 @@ VAR _calcItems =
 		[Description],
 		[DAX]
 	)
+-- VAR _functions =
+-- 	SELECTCOLUMNS(
+-- 		INFO.USERDEFINEDFUNCTIONS(),
+-- 		"User Functions", BLANK(),
+-- 		[Name],
+-- 		[Description],
+-- 		"DAX", [Expression],
+-- 		"Is Hidden", [IsHidden]
+-- 	)
 
-// OUTPUT
+-- OUTPUT
 
 EVALUATE _info
 EVALUATE _tables
@@ -321,8 +340,11 @@ EVALUATE _rlsFilters
 EVALUATE _calcGroups
 EVALUATE _calcItems
 EVALUATE _dependencies
+-- EVALUATE _functions
 
 
-// This query is intended to be run in 'DAX Studio.
-// It is designed to speed up report documentation.
-// Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
+/*
+This query is intended to be run in 'DAX Studio.
+It is designed to speed up report documentation.
+Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
+*/
