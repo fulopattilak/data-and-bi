@@ -146,7 +146,7 @@ VAR _baseTables =
 				SELECTCOLUMNS(
                     ADDCOLUMNS(
 					    INFO.VIEW.TABLES(),
-					"Is Calculated", IF([Expression] = BLANK(), "False", "True")
+					"Is Calculated", IF([Expression] <> BLANK(), TRUE, FALSE)
                     ),
 					"Tables", BLANK(),
 					"Table ID", [ID],
