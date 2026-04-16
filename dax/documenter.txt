@@ -26,6 +26,7 @@ VAR _info =
 		(,"Query 12", "Dependencies", "Describes table column and measure dependencies.")
 	}
 		--(,"Query 13", "User Functions", "Lists User Defined Functions.")
+
 -- DIM tables
 
 VAR _iteratorFunctions = 
@@ -161,10 +162,12 @@ VAR _tables =
 					"Rows", [Cardinality]
 				)
 			),
-			SELECTCOLUMNS(
-				INFO.PARTITIONS(),
-				"Table ID", [TableID],
-				"DAX or M-Query", [QueryDefinition]
+			DISTINCT(
+                SELECTCOLUMNS(
+                    INFO.PARTITIONS(),
+                    "Table ID", [TableID],
+                    "DAX or M-Query", [QueryDefinition]
+                )
 			)
 		),
 		[Tables], [Table], [Description], [Is Hidden], [Is Calculated], [Storage Mode], [Rows], [DAX or M-Query]
@@ -341,7 +344,6 @@ EVALUATE _calcGroups
 EVALUATE _calcItems
 EVALUATE _dependencies
 -- EVALUATE _functions
-
 
 /*
 This query is intended to be run in 'DAX Studio.
