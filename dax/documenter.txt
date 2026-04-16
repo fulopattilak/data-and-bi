@@ -27,9 +27,9 @@ VAR _info =
 	}
 		--(,"Query 13", "User Functions", "Lists User Defined Functions.")
 
--- DIM tables
+-- REFERENCE
 
-VAR _iteratorFunctions = 
+VAR _refIteratorFunctions = 
 	{
 		"SUMX(",
 		"AVERAGEX(",
@@ -48,7 +48,7 @@ VAR _iteratorFunctions =
 		"SUMMARIZE(",
 		"SUMMARIZECOLUMNS("
 	}
-VAR _refreshGranularity =
+VAR _refRefreshGranularity =
 	DATATABLE("Granularity",STRING,"Granularity ID",INTEGER,
 		{
 			{"Invalid", -1},
@@ -58,41 +58,30 @@ VAR _refreshGranularity =
 			{"Year(s)", 3}
 		}
 	)
-VAR _refreshMode =
-	DATATABLE("Refresh Mode", STRING, "Refresh Mode ID", INTEGER, "Refresh Mode Description", STRING,
+VAR _refRefreshMode =
+	DATATABLE("Refresh Mode", STRING, "Refresh Mode ID", INTEGER,
 		{
-			{"Import", 0, "Creates import partitions during incremental refresh."},
-			{"Hybrid", 1, "Creates import and DirectQuery partitions during incremental refresh."}
+			{"Import", 0},
+			{"Hybrid", 1}
 		}
 	)
-
--- STAGING tables
-
-VAR _rlsTbl =
+VAR _refRlsRoles =
 	SELECTCOLUMNS(
 		INFO.ROLES(),
 		"RLS Role ID", [ID],
 		"Role", [Name],
 		"Description", [Description]
 	)
-VAR _tablesTbl =
+VAR _refTables =
 	SELECTCOLUMNS(
 		INFO.TABLES(),
 			"Table ID", [ID],
 			"Table", [Name]
 	)
 
-VAR _calcGroupsTbl =
-	NATURALLEFTOUTERJOIN(
-		SELECTCOLUMNS(
-			INFO.CALCULATIONGROUPS(),
-			"Calculation Group ID", [ID],
-			"Table ID", [TableID],
-			[Description]
-		),
-		_tablesTbl
-	)
-VAR _columnsTbl =
+-- BASE
+
+VAR _baseColumns =
 	NATURALLEFTOUTERJOIN(
 		SELECTCOLUMNS(
 			INFO.VIEW.COLUMNS(),
@@ -115,39 +104,49 @@ VAR _columnsTbl =
 			"Lowest Value", CONVERT([Min], STRING),
 			"Highest Value", CONVERT([Max], STRING),
 			[Cardinality],
-			[Max Length]
+			"Value Length", [Max Length]
 		)
 	)
-
--- OUTPUT tables
-
-VAR _dependencies =
-	SELECTCOLUMNS(INFO.CALCDEPENDENCY(),
-		"Dependencies", BLANK(),
-		"Object", [OBJECT],
-		"Table", [TABLE],
-		"Type", [OBJECT_TYPE],
-		"Referenced Object", [REFERENCED_OBJECT],
-		"Referenced Table", [REFERENCED_TABLE],
-		"Referenced Type", [REFERENCED_OBJECT_TYPE]
-	)
-VAR _columns =
-	SELECTCOLUMNS(
-		FILTER(
-			_columnsTbl,
-			[Category] <> "RowNumber"
-		),
-		[Columns], [Table], [Column], [Description],[DAX],[Format String], [Data Type], [Is Hidden], [Is Unique], [Sorted By], [Lowest Value], [Highest Value], [Cardinality],
-		"Max Length", COALESCE([Max Length], LEN([Highest Value]))
-	)
-VAR _tables =
-	SELECTCOLUMNS(
+VAR _baseTables =
+	VAR _baseTableRows =
+		SELECTCOLUMNS(
+			FILTER(_baseColumns, [Category] = "RowNumber"),
+			[Table],
+			"Rows", [Cardinality]
+		)
+	VAR _baseTableQueries =
+		VAR _baseRefreshPolicyQueries =
+			SELECTCOLUMNS(
+				INFO.REFRESHPOLICIES(),
+				"Table ID", [TableID],
+				"Refresh Policy Query", [SourceExpression]
+			)
+		VAR _basePartitionQueries =
+			SELECTCOLUMNS(
+				GROUPBY(
+					INFO.PARTITIONS(),
+					[TableID],
+					"Partition Query", MAXX(CURRENTGROUP(), [QueryDefinition])
+				),
+				"Table ID", [TableID],
+				"Partition Query", [Partition Query]
+			)
+		RETURN
+			SELECTCOLUMNS(
+				NATURALLEFTOUTERJOIN(
+					_basePartitionQueries,
+					_baseRefreshPolicyQueries
+				),
+				"Table ID", [Table ID],
+				"DAX or M-Query", COALESCE([Refresh Policy Query], [Partition Query])
+			)
+	RETURN
 		NATURALLEFTOUTERJOIN(
 			NATURALLEFTOUTERJOIN(
 				SELECTCOLUMNS(
                     ADDCOLUMNS(
 					    INFO.VIEW.TABLES(),
-                        "Is Calculated", IF([Expression] = BLANK(), "False", "True")
+					"Is Calculated", IF([Expression] = BLANK(), "False", "True")
                     ),
 					"Tables", BLANK(),
 					"Table ID", [ID],
@@ -157,20 +156,44 @@ VAR _tables =
 					"Storage Mode", [StorageMode],
                     [Is Calculated]
 				),
-				SELECTCOLUMNS(FILTER(_columnsTbl, [Category] = "RowNumber"),
-					[Table],
-					"Rows", [Cardinality]
-				)
+				_baseTableRows
 			),
-			DISTINCT(
-                SELECTCOLUMNS(
-                    INFO.PARTITIONS(),
-                    "Table ID", [TableID],
-                    "DAX or M-Query", [QueryDefinition]
-                )
-			)
-		),
+			_baseTableQueries
+		)
+VAR _baseDependencies =
+	SELECTCOLUMNS(
+		INFO.CALCDEPENDENCY(),
+		"Object", [OBJECT],
+		"Table", [TABLE],
+		"Type", [OBJECT_TYPE],
+		"Referenced Object", [REFERENCED_OBJECT],
+		"Referenced Table", [REFERENCED_TABLE],
+		"Referenced Type", [REFERENCED_OBJECT_TYPE]
+	)
+VAR _baseCalculationGroups =
+	SELECTCOLUMNS(
+		INFO.CALCULATIONGROUPS(),
+		"Calculation Group ID", [ID],
+		"Table ID", [TableID],
+		"Table", MINX(FILTER(_refTables, [Table ID] = [TableID]), [Table]),
+		[Description]
+	)
+
+-- FINAL
+
+VAR _tables =
+	SELECTCOLUMNS(
+		_baseTables,
 		[Tables], [Table], [Description], [Is Hidden], [Is Calculated], [Storage Mode], [Rows], [DAX or M-Query]
+	)
+VAR _columns =
+	SELECTCOLUMNS(
+		FILTER(
+			_baseColumns,
+			[Category] <> "RowNumber"
+		),
+		[Columns], [Table], [Column], [Description],[DAX],[Format String], [Data Type], [Is Hidden], [Is Unique], [Sorted By], [Lowest Value], [Highest Value], [Cardinality],
+		"Value Length", COALESCE([Value Length], LEN([Highest Value]))
 	)
 VAR _measures =
 	NATURALLEFTOUTERJOIN(
@@ -192,7 +215,7 @@ VAR _measures =
 					IF (
 						COUNTROWS(
 							FILTER(
-								_iteratorFunctions,
+								_refIteratorFunctions,
 								CONTAINSSTRING(
 									SUBSTITUTE(
 									SUBSTITUTE(
@@ -224,13 +247,13 @@ VAR _measures =
 						IF(_cnt <= 0,BLANK(), _cnt)
 			),
 			SELECTCOLUMNS(
-				GROUPBY(FILTER(_dependencies, [Referenced Type] = "MEASURE" && [Type] = "MEASURE"), [Object], "Referenced Measures", COUNTX(CURRENTGROUP(),1)),
+				GROUPBY(FILTER(_baseDependencies, [Referenced Type] = "MEASURE" && [Type] = "MEASURE"), [Object], "Referenced Measures", COUNTX(CURRENTGROUP(),1)),
 					"Measure", [Object],
 					[Referenced Measures]
 			)
 		),
 		SELECTCOLUMNS(
-		GROUPBY(FILTER(_dependencies, [Type] = "MEASURE"), [Object], "Referenced Objects", COUNTX(CURRENTGROUP(),1)),
+		GROUPBY(FILTER(_baseDependencies, [Type] = "MEASURE"), [Object], "Referenced Objects", COUNTX(CURRENTGROUP(),1)),
 			"Measure", [Object],
 			[Referenced Objects]
 		)
@@ -249,38 +272,6 @@ VAR _relationships =
 		"To Column", [ToColumn],
 		"Cardinality", [FromCardinality] & " to " & [ToCardinality]
 	)
-VAR _incrementalTables =
-	SELECTCOLUMNS(
-		INFO.REFRESHPOLICIES(),
-		"Incremental Tables", BLANK(),
-		"Table", MINX(FILTER(_tablesTbl, [Table ID] = [TableID]), [Table]),
-		"Rolling Window History", [RollingWindowPeriods] & " " & MINX(FILTER(_refreshGranularity, [RollingWindowGranularity] = [Granularity ID]), [Granularity]),
-		"Incremental Window", [IncrementalPeriods] & " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]),
-		"Incremental Window End",  [IncrementalPeriodsOffset] & " " & MINX(FILTER(_refreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]) & " from Refresh Date",
-		"Refresh Mode", MINX(FILTER(_refreshMode, [Refresh Mode ID] = [PolicyType]), [Refresh Mode])
-	)
-VAR _rlsRoles =
-	SELECTCOLUMNS(_rlsTbl,
-		"RLS Roles", BLANK(),
-		[Role],
-		[Description]
-	)
-VAR _rlsFilters =
-	VAR _rlsFiltersTbl =
-		SELECTCOLUMNS(
-			INFO.TABLEPERMISSIONS(),
-			"Role ID", [RoleID],
-			"RLS Table ID", [TableID],
-			"DAX", [FilterExpression]
-		)
-	RETURN
-		SELECTCOLUMNS(
-			_rlsFiltersTbl,
-			"RLS Filters", BLANK(),
-			"Role", MINX(FILTER(_rlsTbl, [Role ID] = [RLS Role ID]), [Role]),
-			"Table", MINX(FILTER(_tablesTbl, [Table ID] = [RLS Table ID]), [Table]),
-			[DAX]
-		)
 VAR _otherQueries =
 	SELECTCOLUMNS(
 		INFO.EXPRESSIONS(),
@@ -289,35 +280,59 @@ VAR _otherQueries =
 		"Description", [Description],
 		"M-Query", [Expression]
 	)
+VAR _incrementalTables =
+	SELECTCOLUMNS(
+		INFO.REFRESHPOLICIES(),
+		"Incremental Tables", BLANK(),
+		"Table", MINX(FILTER(_refTables, [Table ID] = [TableID]), [Table]),
+		"Rolling Window History", [RollingWindowPeriods] & " " & MINX(FILTER(_refRefreshGranularity, [RollingWindowGranularity] = [Granularity ID]), [Granularity]),
+		"Incremental Window", [IncrementalPeriods] & " " & MINX(FILTER(_refRefreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]),
+		"Incremental Window End",  [IncrementalPeriodsOffset] & " " & MINX(FILTER(_refRefreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]) & " from Refresh Date",
+		"Refresh Mode", MINX(FILTER(_refRefreshMode, [Refresh Mode ID] = [PolicyType]), [Refresh Mode])
+	)
+VAR _rlsRoles =
+	SELECTCOLUMNS(_refRlsRoles,
+		"RLS Roles", BLANK(),
+		[Role],
+		[Description]
+	)
+VAR _rlsFilters =
+	VAR _baseRlsFilters =
+		SELECTCOLUMNS(
+			INFO.TABLEPERMISSIONS(),
+			"Role ID", [RoleID],
+			"RLS Table ID", [TableID],
+			"DAX", [FilterExpression]
+		)
+	RETURN
+		SELECTCOLUMNS(
+			_baseRlsFilters,
+			"RLS Filters", BLANK(),
+			"Role", MINX(FILTER(_refRlsRoles, [Role ID] = [RLS Role ID]), [Role]),
+			"Table", MINX(FILTER(_refTables, [Table ID] = [RLS Table ID]), [Table]),
+			[DAX]
+		)
 VAR _calcGroups =
 	SELECTCOLUMNS(
-		_calcGroupsTbl,
+		_baseCalculationGroups,
 		"Calculation Groups", BLANK(),
 		"Calculation Group", [Table],
 		[Description]
 	)
 VAR _calcItems =
 	SELECTCOLUMNS(
-		NATURALLEFTOUTERJOIN(
-			SELECTCOLUMNS(
-				INFO.CALCULATIONITEMS(),
-				"Calculation Group ID", [CalculationGroupID],
-				[Name],
-				[Description],
-				"DAX", [Expression]
-
-			),
-			SELECTCOLUMNS(
-				_calcGroupsTbl,
-				[Calculation Group ID],
-				[Table]
-			)
-		),
+		INFO.CALCULATIONITEMS(),
 		"Calculation Items", BLANK(),
-		"Calculation Group", [Table],
+		"Calculation Group", MINX(FILTER(_baseCalculationGroups, [Calculation Group ID] = [CalculationGroupID]), [Table]),
 		"Calculation Item", [Name],
 		[Description],
-		[DAX]
+		"DAX", [Expression]
+	)
+VAR _dependencies =
+	SELECTCOLUMNS(
+		_baseDependencies,
+		"Dependencies", BLANK(),
+		[Object], [Table], [Type], [Referenced Object], [Referenced Table], [Referenced Type]
 	)
 -- VAR _functions =
 -- 	SELECTCOLUMNS(
