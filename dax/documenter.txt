@@ -1,14 +1,16 @@
 /*
-This query is intended to be run in 'DAX Studio.
-It is designed to speed up report documentation.
-Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
+	This query is intended to be run in 'DAX Studio.
+	It is designed to speed up report documentation.
+	Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
 */
 
 DEFINE
  
-VAR _info = 
+VAR _info =
+	VAR _utcDatetime = UTCNOW()
+	RETURN
 	{
-		("POWER BI",,"Created at: ",FORMAT(UTCNOW(), "d. mmm yyyy, h:nn") & " UTC"),
+		("POWER BI",,"Created Datetime UTC: ",_utcDatetime),
 		("DOCUMENTATION",,"Script: ","https://github.com/fulopattilak/data-and-bi/wiki/Report-documentation-with-DAX-Studio"),
 		(,,,),
 		(,"Sheet", "Table Name", "Description"),
@@ -19,13 +21,14 @@ VAR _info =
 		(,"Query 5", "Relationships","Describes the relationships between tables."),
 		(,"Query 6", "Other Queries","Describes the queries that are used in Power Query, but not loaded to the model."),
 		(,"Query 7", "Incremental Tables", "Describes the incremental refresh policy of the tables."),
-		(,"Query 8", "RLS Roles", "Lists the RLS roles that are set."),
-		(,"Query 9", "RLS Filters", "Describes the filtering criteria for RLS roles."),
-		(,"Query 10", "Calculation Groups", "Lists Calculation groups."),
-		(,"Query 11", "Calculation Items", "Describes the Calculation items defined inside Calculation groups."),
-		(,"Query 12", "Dependencies", "Describes table column and measure dependencies.")
+		(,"Query 8", "Incremental Partitions", "Lists partitions for tables that have more than one partition."),
+		(,"Query 9", "RLS Roles", "Lists the RLS roles that are set."),
+		(,"Query 10", "RLS Filters", "Describes the filtering criteria for RLS roles."),
+		(,"Query 11", "Calculation Groups", "Lists Calculation groups."),
+		(,"Query 12", "Calculation Items", "Describes the Calculation items defined inside Calculation groups."),
+		(,"Query 13", "Dependencies", "Describes table column and measure dependencies.")
 	}
-		--(,"Query 13", "User Functions", "Lists User Defined Functions.")
+		--(,"Query 14", "User Functions", "Lists User Defined Functions.")
 
 -- REFERENCE
 
@@ -107,12 +110,38 @@ VAR _baseColumns =
 			"Value Length", [Max Length]
 		)
 	)
+VAR _basePartitions =
+	SELECTCOLUMNS(
+		INFO.PARTITIONS(),
+		"Table ID", [TableID],
+		"Table", MINX(FILTER(_refTables, [Table ID] = [TableID]), [Table]),
+		"Partition", [Name],
+		"Refresh Datetime",
+			IF(
+				[RefreshedTime] < DATE(1900, 1, 1),
+				COALESCE([ModifiedTime], [RefreshedTime]),
+				[RefreshedTime]
+			),
+		"Partition Query", [QueryDefinition],
+		"RangeStart", [RangeStart],
+		"RangeEnd", [RangeEnd]
+	)
 VAR _baseTables =
 	VAR _baseTableRows =
 		SELECTCOLUMNS(
 			FILTER(_baseColumns, [Category] = "RowNumber"),
 			[Table],
 			"Rows", [Cardinality]
+		)
+	VAR _baseTablePartitions =
+		SELECTCOLUMNS(
+			GROUPBY(
+				_basePartitions,
+				[Table ID],
+				"Refresh Datetime", MAXX(CURRENTGROUP(), [Refresh Datetime]),
+				"Partition Query", MAXX(CURRENTGROUP(), [Partition Query])
+			),
+			[Table ID], [Refresh Datetime], [Partition Query]
 		)
 	VAR _baseTableQueries =
 		VAR _baseRefreshPolicyQueries =
@@ -121,24 +150,14 @@ VAR _baseTables =
 				"Table ID", [TableID],
 				"Refresh Policy Query", [SourceExpression]
 			)
-		VAR _basePartitionQueries =
-			SELECTCOLUMNS(
-				GROUPBY(
-					INFO.PARTITIONS(),
-					[TableID],
-					"Partition Query", MAXX(CURRENTGROUP(), [QueryDefinition])
-				),
-				"Table ID", [TableID],
-				"Partition Query", [Partition Query]
-			)
 		RETURN
 			SELECTCOLUMNS(
 				NATURALLEFTOUTERJOIN(
-					_basePartitionQueries,
+					_baseTablePartitions,
 					_baseRefreshPolicyQueries
 				),
-				"Table ID", [Table ID],
-				"DAX or M-Query", COALESCE([Refresh Policy Query], [Partition Query])
+				"DAX or M-Query", COALESCE([Refresh Policy Query], [Partition Query]),
+				[Table ID], [Refresh Datetime], [Partition Query]
 			)
 	RETURN
 		NATURALLEFTOUTERJOIN(
@@ -184,7 +203,9 @@ VAR _baseCalculationGroups =
 VAR _tables =
 	SELECTCOLUMNS(
 		_baseTables,
-		[Tables], [Table], [Description], [Is Hidden], [Is Calculated], [Storage Mode], [Rows], [DAX or M-Query]
+		[Tables], [Table], [Description], 
+		"Refresh Datetime UTC", [Refresh Datetime],
+		[Is Hidden], [Is Calculated], [Storage Mode], [Rows], [DAX or M-Query]
 	)
 VAR _columns =
 	SELECTCOLUMNS(
@@ -290,6 +311,30 @@ VAR _incrementalTables =
 		"Incremental Window End",  [IncrementalPeriodsOffset] & " " & MINX(FILTER(_refRefreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]) & " from Refresh Date",
 		"Refresh Mode", MINX(FILTER(_refRefreshMode, [Refresh Mode ID] = [PolicyType]), [Refresh Mode])
 	)
+VAR _incrementalPartitions =
+	VAR _baseIncrementalTables =
+		SELECTCOLUMNS(
+			FILTER(
+				GROUPBY(
+					_basePartitions,
+					[Table ID],
+					"Partition Count", COUNTX(CURRENTGROUP(), 1)
+				),
+				[Partition Count] > 1
+			),
+			"Table ID", [Table ID]
+		)
+	RETURN
+		SELECTCOLUMNS(
+			NATURALINNERJOIN(
+				_basePartitions,
+				_baseIncrementalTables
+			),
+			"Incremental Partitions", BLANK(),
+			[Table], [Partition], 
+			"Refresh/Merge Datetime UTC", [Refresh Datetime],
+			[RangeStart], [RangeEnd]
+		)
 VAR _rlsRoles =
 	SELECTCOLUMNS(_refRlsRoles,
 		"RLS Roles", BLANK(),
@@ -334,34 +379,37 @@ VAR _dependencies =
 		"Dependencies", BLANK(),
 		[Object], [Table], [Type], [Referenced Object], [Referenced Table], [Referenced Type]
 	)
--- VAR _functions =
--- 	SELECTCOLUMNS(
--- 		INFO.USERDEFINEDFUNCTIONS(),
--- 		"User Functions", BLANK(),
--- 		[Name],
--- 		[Description],
--- 		"DAX", [Expression],
--- 		"Is Hidden", [IsHidden]
--- 	)
+/*
+	VAR _functions =
+		SELECTCOLUMNS(
+			INFO.USERDEFINEDFUNCTIONS(),
+			"User Functions", BLANK(),
+			[Name],
+			[Description],
+			"DAX", [Expression],
+			"Is Hidden", [IsHidden]
+		)
+*/
 
 -- OUTPUT
 
 EVALUATE _info
-EVALUATE _tables
-EVALUATE _columns
-EVALUATE _measures
-EVALUATE _relationships
-EVALUATE _otherQueries
-EVALUATE _incrementalTables
-EVALUATE _rlsRoles
-EVALUATE _rlsFilters
-EVALUATE _calcGroups
-EVALUATE _calcItems
-EVALUATE _dependencies
+EVALUATE _tables ORDER BY [Table]
+EVALUATE _columns ORDER BY [Table], [Column]
+EVALUATE _measures ORDER BY [Measure]
+EVALUATE _relationships ORDER BY [Relationship]
+EVALUATE _otherQueries ORDER BY [Query Name]
+EVALUATE _incrementalTables ORDER BY [Table]
+EVALUATE _incrementalPartitions ORDER BY [Table], [Partition]
+EVALUATE _rlsRoles ORDER BY [Role]
+EVALUATE _rlsFilters ORDER BY [Role], [Table]
+EVALUATE _calcGroups ORDER BY [Calculation Group]
+EVALUATE _calcItems ORDER BY [Calculation Group], [Calculation Item]
+EVALUATE _dependencies ORDER BY [Table], [Object], [Referenced Table], [Referenced Object]
 -- EVALUATE _functions
 
 /*
-This query is intended to be run in 'DAX Studio.
-It is designed to speed up report documentation.
-Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
+	This query is intended to be run in 'DAX Studio.
+	It is designed to speed up report documentation.
+	Change the 'Results' dropdown to 'Static' in the 'Home' tab > 'Output' option.
 */
