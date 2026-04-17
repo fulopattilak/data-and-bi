@@ -5,30 +5,6 @@
 */
 
 DEFINE
- 
-VAR _info =
-	VAR _utcDatetime = UTCNOW()
-	RETURN
-	{
-		("POWER BI",,"Created Datetime UTC: ",_utcDatetime),
-		("DOCUMENTATION",,"Script: ","https://github.com/fulopattilak/data-and-bi/wiki/Report-documentation-with-DAX-Studio"),
-		(,,,),
-		(,"Sheet", "Table Name", "Description"),
-		(,,,),
-		(,"Query 2", "Tables", "Describes the tables loaded from Power Query and all calculated tables."),
-		(,"Query 3", "Columns", "Describes columns and calculated columns."),
-		(,"Query 4", "Measures", "Describes all measures."),
-		(,"Query 5", "Relationships","Describes the relationships between tables."),
-		(,"Query 6", "Other Queries","Describes the queries that are used in Power Query, but not loaded to the model."),
-		(,"Query 7", "Incremental Tables", "Describes the incremental refresh policy of the tables."),
-		(,"Query 8", "Incremental Partitions", "Lists partitions for tables that have more than one partition."),
-		(,"Query 9", "RLS Roles", "Lists the RLS roles that are set."),
-		(,"Query 10", "RLS Filters", "Describes the filtering criteria for RLS roles."),
-		(,"Query 11", "Calculation Groups", "Lists Calculation groups."),
-		(,"Query 12", "Calculation Items", "Describes the Calculation items defined inside Calculation groups."),
-		(,"Query 13", "Dependencies", "Describes table column and measure dependencies.")
-	}
-		--(,"Query 14", "User Functions", "Lists User Defined Functions.")
 
 -- REFERENCE
 
@@ -81,24 +57,36 @@ VAR _refTables =
 			"Table ID", [ID],
 			"Table", [Name]
 	)
-
+VAR _refColumnOrder =
+	SELECTCOLUMNS(
+		FILTER(
+			INFO.COLUMNSTORAGES(),
+			[StoragePosition] <> 0
+		),
+		"Column ID", [ColumnID],
+		"Order In Table", [StoragePosition]
+	)
 -- BASE
 
 VAR _baseColumns =
 	NATURALLEFTOUTERJOIN(
-		SELECTCOLUMNS(
-			INFO.VIEW.COLUMNS(),
-			"Columns", BLANK(),
-			[Table],
-			"Column", [Name],
-			[Description],
-			"DAX", [Expression],
-			"Format String", [FormatString],
-			"Data Type", [DataType],
-			"Is Hidden", [IsHidden],
-			"Is Unique", [IsUnique],
-			"Sorted By", [SortByColumn],
-			"Category", [DataCategory]
+		NATURALLEFTOUTERJOIN(
+			SELECTCOLUMNS(
+				INFO.VIEW.COLUMNS(),
+				"Column ID", [ID],
+				"Columns", BLANK(),
+				[Table],
+				"Column", [Name],
+				[Description],
+				"DAX", [Expression],
+				"Format String", [FormatString],
+				"Data Type", [DataType],
+				"Is Hidden", [IsHidden],
+				"Is Unique", [IsUnique],
+				"Sorted By", [SortByColumn],
+				"Category", [DataCategory]
+			),
+			_refColumnOrder
 		),
 		SELECTCOLUMNS(
 			COLUMNSTATISTICS(),
@@ -213,7 +201,9 @@ VAR _columns =
 			_baseColumns,
 			[Category] <> "RowNumber"
 		),
-		[Columns], [Table], [Column], [Description],[DAX],[Format String], [Data Type], [Is Hidden], [Is Unique], [Sorted By], [Lowest Value], [Highest Value], [Cardinality],
+		[Columns], [Table], [Column],
+		"Order In Table", [Order In Table],
+		[Description],[DAX],[Format String], [Data Type], [Is Hidden], [Is Unique], [Sorted By], [Lowest Value], [Highest Value], [Cardinality],
 		"Value Length", COALESCE([Value Length], LEN([Highest Value]))
 	)
 VAR _measures =
@@ -379,6 +369,28 @@ VAR _dependencies =
 		"Dependencies", BLANK(),
 		[Object], [Table], [Type], [Referenced Object], [Referenced Table], [Referenced Type]
 	)
+VAR _info =
+	{
+        (1,"POWER BI DOCUMENTATION","Script: ","https://github.com/fulopattilak/data-and-bi/wiki/Report-documentation-with-DAX-Studio"),
+		(2,"Created at (UTC): ",UTCNOW(),),
+		(3,"Report refresh (UTC): ",MINX(_tables, [Refresh Datetime UTC]),),
+        (4,,,),
+		(5,"Sheet", "Table Name", "Description"),
+		(6,,,),
+		(7,"Query 2", "Tables", "Describes the tables loaded from Power Query and all calculated tables."),
+		(8,"Query 3", "Columns", "Describes columns and calculated columns."),
+		(9,"Query 4", "Measures", "Describes all measures."),
+		(10,"Query 5", "Relationships","Describes the relationships between tables."),
+		(11,"Query 6", "Other Queries","Describes the queries that are used in Power Query, but not loaded to the model."),
+		(12,"Query 7", "Incremental Tables", "Describes the incremental refresh policy of the tables."),
+		(13,"Query 8", "Incremental Partitions", "Lists partitions for tables that have more than one partition."),
+		(14,"Query 9", "RLS Roles", "Lists the RLS roles that are set."),
+		(15,"Query 10", "RLS Filters", "Describes the filtering criteria for RLS roles."),
+		(16,"Query 11", "Calculation Groups", "Lists Calculation groups."),
+		(17,"Query 12", "Calculation Items", "Describes the Calculation items defined inside Calculation groups."),
+		(18,"Query 13", "Dependencies", "Describes table column and measure dependencies.")
+	}
+		--(,"Query 14", "User Functions", "Lists User Defined Functions.")
 /*
 	VAR _functions =
 		SELECTCOLUMNS(
@@ -393,9 +405,9 @@ VAR _dependencies =
 
 -- OUTPUT
 
-EVALUATE _info
+EVALUATE _info ORDER BY [Value1]
 EVALUATE _tables ORDER BY [Table]
-EVALUATE _columns ORDER BY [Table], [Column]
+EVALUATE _columns ORDER BY [Table], [Order In Table]
 EVALUATE _measures ORDER BY [Measure]
 EVALUATE _relationships ORDER BY [Relationship]
 EVALUATE _otherQueries ORDER BY [Query Name]
