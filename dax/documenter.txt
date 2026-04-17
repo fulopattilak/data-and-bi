@@ -57,36 +57,24 @@ VAR _refTables =
 			"Table ID", [ID],
 			"Table", [Name]
 	)
-VAR _refColumnOrder =
-	SELECTCOLUMNS(
-		FILTER(
-			INFO.COLUMNSTORAGES(),
-			[StoragePosition] <> 0
-		),
-		"Column ID", [ColumnID],
-		"Order In Table", [StoragePosition]
-	)
+	
 -- BASE
 
 VAR _baseColumns =
 	NATURALLEFTOUTERJOIN(
-		NATURALLEFTOUTERJOIN(
-			SELECTCOLUMNS(
-				INFO.VIEW.COLUMNS(),
-				"Column ID", [ID],
-				"Columns", BLANK(),
-				[Table],
-				"Column", [Name],
-				[Description],
-				"DAX", [Expression],
-				"Format String", [FormatString],
-				"Data Type", [DataType],
-				"Is Hidden", [IsHidden],
-				"Is Unique", [IsUnique],
-				"Sorted By", [SortByColumn],
-				"Category", [DataCategory]
-			),
-			_refColumnOrder
+		SELECTCOLUMNS(
+			INFO.VIEW.COLUMNS(),
+			"Columns", BLANK(),
+			[Table],
+			"Column", [Name],
+			[Description],
+			"DAX", [Expression],
+			"Format String", [FormatString],
+			"Data Type", [DataType],
+			"Is Hidden", [IsHidden],
+			"Is Unique", [IsUnique],
+			"Sorted By", [SortByColumn],
+			"Category", [DataCategory]
 		),
 		SELECTCOLUMNS(
 			COLUMNSTATISTICS(),
@@ -202,7 +190,6 @@ VAR _columns =
 			[Category] <> "RowNumber"
 		),
 		[Columns], [Table], [Column],
-		"Order In Table", [Order In Table],
 		[Description],[DAX],[Format String], [Data Type], [Is Hidden], [Is Unique], [Sorted By], [Lowest Value], [Highest Value], [Cardinality],
 		"Value Length", COALESCE([Value Length], LEN([Highest Value]))
 	)
@@ -407,7 +394,7 @@ VAR _info =
 
 EVALUATE _info ORDER BY [Value1]
 EVALUATE _tables ORDER BY [Table]
-EVALUATE _columns ORDER BY [Table], [Order In Table]
+EVALUATE _columns ORDER BY [Table], [Column]
 EVALUATE _measures ORDER BY [Measure]
 EVALUATE _relationships ORDER BY [Relationship]
 EVALUATE _otherQueries ORDER BY [Query Name]
