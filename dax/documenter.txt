@@ -87,21 +87,50 @@ VAR _baseColumns =
 		)
 	)
 VAR _basePartitions =
-	SELECTCOLUMNS(
-		INFO.PARTITIONS(),
-		"Table ID", [TableID],
-		"Table", MINX(FILTER(_refTables, [Table ID] = [TableID]), [Table]),
-		"Partition", [Name],
-		"Refresh Datetime",
-			IF(
-				[RefreshedTime] < DATE(1900, 1, 1),
-				COALESCE([ModifiedTime], [RefreshedTime]),
-				[RefreshedTime]
+	VAR _partitionRows =
+		SELECTCOLUMNS(
+			NATURALLEFTOUTERJOIN(
+				NATURALLEFTOUTERJOIN(
+					SELECTCOLUMNS(
+						INFO.PARTITIONS(),
+						"Partition ID", [ID],
+						"PartitionStorageID", [PartitionStorageID]
+					),
+					SELECTCOLUMNS(
+						INFO.PARTITIONSTORAGES(),
+						"PartitionStorageID", [ID],
+						"SegmentMapStorageID", [SegmentMapStorageID]
+					)
+				),
+				SELECTCOLUMNS(
+					INFO.SEGMENTMAPSTORAGES(),
+					"SegmentMapStorageID", [ID],
+					"Rows", [RecordCount]
+				)
 			),
-		"Partition Query", [QueryDefinition],
-		"RangeStart", [RangeStart],
-		"RangeEnd", [RangeEnd]
-	)
+			[Partition ID],
+			[Rows]
+		)
+	RETURN
+		NATURALLEFTOUTERJOIN(
+			SELECTCOLUMNS(
+				INFO.PARTITIONS(),
+				"Partition ID", [ID],
+				"Table ID", [TableID],
+				"Table", MINX(FILTER(_refTables, [Table ID] = [TableID]), [Table]),
+				"Partition", [Name],
+				"Refresh Datetime",
+					IF(
+						[RefreshedTime] < DATE(1900, 1, 1),
+						COALESCE([ModifiedTime], [RefreshedTime]),
+						[RefreshedTime]
+					),
+				"Partition Query", [QueryDefinition],
+				"RangeStart", [RangeStart],
+				"RangeEnd", [RangeEnd]
+			),
+			_partitionRows
+		)
 VAR _baseTables =
 	VAR _baseTableRows =
 		SELECTCOLUMNS(
@@ -299,7 +328,7 @@ VAR _incrementalPartitions =
 				),
 				[Partition Count] > 1
 			),
-			"Table ID", [Table ID]
+			[Table ID]
 		)
 	RETURN
 		SELECTCOLUMNS(
@@ -308,7 +337,7 @@ VAR _incrementalPartitions =
 				_baseIncrementalTables
 			),
 			"Incremental Partitions", BLANK(),
-			[Table], [Partition], 
+			[Table], [Partition], [Rows],
 			"Refresh/Merge Datetime UTC", [Refresh Datetime],
 			[RangeStart], [RangeEnd]
 		)
