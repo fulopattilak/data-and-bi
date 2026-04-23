@@ -30,11 +30,11 @@ VAR _refIteratorFunctions =
 VAR _refRefreshGranularity =
 	DATATABLE("Granularity",STRING,"Granularity ID",INTEGER,
 		{
-			{"Invalid", -1},
-			{"Day(s)", 0},
-			{"Month(s)", 1},
-			{"Quarter(s)", 2},
-			{"Year(s)", 3}
+			{"invalid", -1},
+			{"day(s)", 0},
+			{"month(s)", 1},
+			{"quarter(s)", 2},
+			{"year(s)", 3}
 		}
 	)
 VAR _refRefreshMode =
@@ -131,59 +131,6 @@ VAR _basePartitions =
 			),
 			_partitionRows
 		)
-VAR _baseTables =
-	VAR _baseTableRows =
-		SELECTCOLUMNS(
-			FILTER(_baseColumns, [Category] = "RowNumber"),
-			[Table],
-			"Rows", [Cardinality]
-		)
-	VAR _baseTablePartitions =
-		SELECTCOLUMNS(
-			GROUPBY(
-				_basePartitions,
-				[Table ID],
-				"Refresh Datetime", MAXX(CURRENTGROUP(), [Refresh Datetime]),
-				"Partition Query", MAXX(CURRENTGROUP(), [Partition Query])
-			),
-			[Table ID], [Refresh Datetime], [Partition Query]
-		)
-	VAR _baseTableQueries =
-		VAR _baseRefreshPolicyQueries =
-			SELECTCOLUMNS(
-				INFO.REFRESHPOLICIES(),
-				"Table ID", [TableID],
-				"Refresh Policy Query", [SourceExpression]
-			)
-		RETURN
-			SELECTCOLUMNS(
-				NATURALLEFTOUTERJOIN(
-					_baseTablePartitions,
-					_baseRefreshPolicyQueries
-				),
-				"DAX or M-Query", COALESCE([Refresh Policy Query], [Partition Query]),
-				[Table ID], [Refresh Datetime], [Partition Query]
-			)
-	RETURN
-		NATURALLEFTOUTERJOIN(
-			NATURALLEFTOUTERJOIN(
-				SELECTCOLUMNS(
-                    ADDCOLUMNS(
-					    INFO.VIEW.TABLES(),
-					"Is Calculated", IF([Expression] <> BLANK(), TRUE, FALSE)
-                    ),
-					"Tables", BLANK(),
-					"Table ID", [ID],
-					"Table", [Name],
-					[Description],
-					"Is Hidden", [IsHidden],
-					"Storage Mode", [StorageMode],
-                    [Is Calculated]
-				),
-				_baseTableRows
-			),
-			_baseTableQueries
-		)
 VAR _baseDependencies =
 	SELECTCOLUMNS(
 		INFO.CALCDEPENDENCY(),
@@ -206,12 +153,66 @@ VAR _baseCalculationGroups =
 -- FINAL
 
 VAR _tables =
-	SELECTCOLUMNS(
-		_baseTables,
-		[Tables], [Table], [Description], 
-		"Refresh Datetime UTC", [Refresh Datetime],
-		[Is Hidden], [Is Calculated], [Storage Mode], [Rows], [DAX or M-Query]
-	)
+	VAR _baseTableRows =
+		SELECTCOLUMNS(
+			FILTER(_baseColumns, [Category] = "RowNumber"),
+			[Table],
+			"Rows", [Cardinality]
+		)
+	VAR _baseTableColumns =
+		SELECTCOLUMNS(
+			GROUPBY(
+				FILTER(_baseColumns, [Category] <> "RowNumber"),
+				[Table],
+				"Columns", COUNTX(CURRENTGROUP(), 1)
+			),
+			[Table],
+			[Columns]
+		)
+	VAR _baseTableQueries =
+		VAR _baseTablePartitions =
+			SELECTCOLUMNS(
+				GROUPBY(
+					_basePartitions,
+					[Table ID],
+					"Refresh Datetime", MAXX(CURRENTGROUP(), [Refresh Datetime]),
+					"Partition Query", MAXX(CURRENTGROUP(), [Partition Query])
+				),
+				[Table ID], [Refresh Datetime], [Partition Query]
+			)
+		VAR _baseRefreshPolicyQueries =
+			SELECTCOLUMNS(
+				INFO.REFRESHPOLICIES(),
+				"Table ID", [TableID],
+				"Refresh Policy Query", [SourceExpression]
+			)
+		RETURN
+			SELECTCOLUMNS(
+				NATURALLEFTOUTERJOIN(
+					_baseTablePartitions,
+					_baseRefreshPolicyQueries
+				),
+				"DAX or M-Query", COALESCE([Refresh Policy Query], [Partition Query]),
+				[Table ID], [Refresh Datetime], [Partition Query]
+			)
+	RETURN
+		SELECTCOLUMNS(
+			ADDCOLUMNS(
+				INFO.VIEW.TABLES(),
+				"Tables", BLANK(),
+				"Table", [Name],
+				"Refresh Datetime UTC", MINX(FILTER(_baseTableQueries, [Table ID] = [ID]), [Refresh Datetime]),
+				"Is Calculated", [Expression] <> BLANK(),
+				"Rows", MINX(FILTER(_baseTableRows, [Table] = [Name]), [Rows]),
+				"Columns",
+					MINX( FILTER(_baseTableColumns, [Table] = [Name]), [Columns]),
+				"DAX or M-Query", MINX(FILTER(_baseTableQueries, [Table ID] = [ID]), [DAX or M-Query])
+			),
+			[Tables], [Table], [Description],
+			[Refresh Datetime UTC],
+			"Is Hidden", [IsHidden],
+			[Is Calculated], "Storage Mode", [StorageMode], [Rows], [Columns], [DAX or M-Query]
+		)
 VAR _columns =
 	SELECTCOLUMNS(
 		FILTER(
@@ -308,15 +309,30 @@ VAR _otherQueries =
 		"M-Query", [Expression]
 	)
 VAR _incrementalTables =
-	SELECTCOLUMNS(
-		INFO.REFRESHPOLICIES(),
-		"Incremental Tables", BLANK(),
-		"Table", MINX(FILTER(_refTables, [Table ID] = [TableID]), [Table]),
-		"Rolling Window History", [RollingWindowPeriods] & " " & MINX(FILTER(_refRefreshGranularity, [RollingWindowGranularity] = [Granularity ID]), [Granularity]),
-		"Incremental Window", [IncrementalPeriods] & " " & MINX(FILTER(_refRefreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]),
-		"Incremental Window End",  [IncrementalPeriodsOffset] & " " & MINX(FILTER(_refRefreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]) & " from Refresh Date",
-		"Refresh Mode", MINX(FILTER(_refRefreshMode, [Refresh Mode ID] = [PolicyType]), [Refresh Mode])
-	)
+	VAR _partitionCounts =
+		SELECTCOLUMNS(
+			GROUPBY(
+				_basePartitions,
+				[Table ID],
+				"Partitions", COUNTX(CURRENTGROUP(), 1)
+			),
+			"TableID", [Table ID],
+			[Partitions]
+		)
+	RETURN
+		SELECTCOLUMNS(
+			NATURALLEFTOUTERJOIN(
+				INFO.REFRESHPOLICIES(),
+				_partitionCounts
+			),
+			"Incremental Tables", BLANK(),
+			"Table", MINX(FILTER(_refTables, [Table ID] = [TableID]), [Table]),
+			"Rolling Window History", [RollingWindowPeriods] & " " & MINX(FILTER(_refRefreshGranularity, [RollingWindowGranularity] = [Granularity ID]), [Granularity]),
+			"Incremental Window", [IncrementalPeriods] & " " & MINX(FILTER(_refRefreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]),
+			"Incremental Window End",  [IncrementalPeriodsOffset] & " " & MINX(FILTER(_refRefreshGranularity, [IncrementalGranularity] = [Granularity ID]), [Granularity]) & " from Refresh Date",
+			"Refresh Mode", MINX(FILTER(_refRefreshMode, [Refresh Mode ID] = [PolicyType]), [Refresh Mode]),
+			[Partitions]
+		)
 VAR _incrementalPartitions =
 	VAR _baseIncrementalTables =
 		SELECTCOLUMNS(
